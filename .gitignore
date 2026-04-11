@@ -1,30 +1,86 @@
-/vendor/
-node_modules/
+# ══════════════════════════════════════
+#  BACKEND — Laravel
+# ══════════════════════════════════════
+
+backend/vendor/
+backend/node_modules/
+
+# Environnement
+backend/.env
+backend/.env.backup
+backend/.env.production
+backend/.env.*.local
+
+# Cache & stockage
+backend/storage/*.key
+backend/storage/logs/
+backend/storage/framework/cache/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/bootstrap/cache/
+backend/public/storage
+backend/public/hot
+backend/public/build
+
+# Tests
+backend/.phpunit.result.cache
+backend/.phpunit.cache/
+
+# Divers Laravel
+backend/auth.json
+backend/.phpactor.json
+backend/Homestead.yaml
+backend/Homestead.json
+backend/.vagrant/
+
+# Logs
+backend/storage/pail/
 npm-debug.log
 yarn-error.log
 
-# Laravel 4 specific
-bootstrap/compiled.php
-app/storage/
 
-# Laravel 5 & Lumen specific
-public/storage
-public/hot
+# ══════════════════════════════════════
+#  FRONTEND — React (Vite)
+# ══════════════════════════════════════
 
-# Laravel 5 & Lumen specific with changed public path
-public_html/storage
-public_html/hot
+frontend/node_modules/
+frontend/dist/
+frontend/build/
 
-storage/*.key
-.env
-Homestead.yaml
-Homestead.json
-/.vagrant
-.phpunit.result.cache
+# Environnement
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
 
-/public/build
-/storage/pail
-.env.backup
-.env.production
-.phpactor.json
-auth.json
+# Cache Vite
+frontend/.vite/
+frontend/.vite-inspect/
+
+# Logs
+frontend/npm-debug.log*
+frontend/yarn-error.log*
+frontend/yarn-debug.log*
+frontend/.pnpm-debug.log*
+
+
+# ══════════════════════════════════════
+#  OS & ÉDITEURS
+# ══════════════════════════════════════
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# VSCode
+.vscode/
+!.vscode/extensions.json
+
+# PhpStorm
+.idea/
+*.iml
+
+# ══════════════════════════════════════
+#  LOGS GÉNÉRAUX
+# ══════════════════════════════════════
+
+*.log
