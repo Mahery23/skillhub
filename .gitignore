@@ -84,3 +84,6 @@ desktop.ini
 # ══════════════════════════════════════
 
 *.log
+
+# Documents PDF (jamais versionnes)
+*.pdf
