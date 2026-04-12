@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 import { getFormations } from '../services/formationService'
 
 const niveauConfig = {
-    'Débutant':      { label: 'Débutant',      cls: 'sh-badge-green' },
-    'Intermédiaire': { label: 'Intermédiaire', cls: 'sh-badge-amber' },
-    'Avancé':        { label: 'Avancé',        cls: 'sh-badge-red'   },
+    debutant: { label: 'Débutant', cls: 'sh-badge-green' },
+    intermediaire: { label: 'Intermédiaire', cls: 'sh-badge-amber' },
+    avance: { label: 'Avancé', cls: 'sh-badge-red' },
 }
 
 const temoignages = [
@@ -64,7 +64,7 @@ function Home({ user, onOpenLogin, onOpenRegister }) {
                             </p>
                             <div className="sh-hero-actions">
                                 {user ? (
-                                    <Link to={user.role === 'formateur' ? '/dashboard/formateur' : '/dashboard/apprenant'} className="sh-btn sh-btn--primary">
+                                    <Link to={dashboardPath} className="sh-btn sh-btn--primary">
                                         Mon dashboard
                                     </Link>
                                 ) : (
@@ -293,7 +293,7 @@ function Home({ user, onOpenLogin, onOpenRegister }) {
                     <p className="sh-cta-sub">Rejoignez des milliers d'apprenants et formateurs sur SkillHub — c'est gratuit.</p>
                     <div className="sh-cta-actions">
                         {user ? (
-                            <Link to={user.role === 'formateur' ? '/dashboard/formateur' : '/dashboard/apprenant'} className="sh-btn sh-btn--white">
+                            <Link to={dashboardPath} className="sh-btn sh-btn--white">
                                 Mon dashboard
                             </Link>
                         ) : (
@@ -315,3 +315,4 @@ function Home({ user, onOpenLogin, onOpenRegister }) {
 }
 
 export default Home
+

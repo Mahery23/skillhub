@@ -1,287 +1,282 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { Modal, Button, Form } from 'react-bootstrap'
-import {
-  getFormationsFormateur,
-  creerFormation,
-  modifierFormation,
-  supprimerFormation,
-} from '../services/formationService'
+import { createFormation, deleteFormation, updateFormation, getMyFormations } from '../services/formationService'
 
-const NIVEAUX    = ["Débutant", "Intermédiaire", "Avancé"]
-const CATEGORIES = ["Développement web", "DevOps", "Design", "Data", "Marketing"]
+const NIVEAUX    = ['Débutant', 'Intermédiaire', 'Avancé']
+const CATEGORIES = ['Développement web', 'DevOps', 'Design', 'Data', 'Marketing']
 
 const niveauConfig = {
-  'Débutant':      { cls: 'sh-badge-green' },
-  'Intermédiaire': { cls: 'sh-badge-amber' },
-  'Avancé':        { cls: 'sh-badge-red'   },
+  debutant:      { cls: 'sh-badge-green',  label: 'Débutant' },
+  intermediaire: { cls: 'sh-badge-amber',  label: 'Intermédiaire' },
+  avance:        { cls: 'sh-badge-red',    label: 'Avancé' },
 }
 
 const FORM_VIDE = { titre: '', niveau: 'Débutant', categorie: 'Développement web', description: '' }
 
+const normalizeNiveau = (niveau = '') =>
+  niveau.toLowerCase().normalize('NFD').replaceAll(/\p{Diacritic}/gu, '')
+
+const normalizeFormation = (f = {}) => ({
+  id:          f.id ?? null,
+  titre:       f.titre || '',
+  niveau:      f.niveau || 'Débutant',
+  categorie:   f.categorie || '',
+  description: f.description || '',
+  apprenants:  f.apprenants ?? 0,
+  vues:        f.vues ?? 0,
+})
+
 function DashboardFormateur({ user }) {
-  const [formations, setFormations]               = useState([])
-  const [loading, setLoading]                     = useState(true)
-  const [error, setError]                         = useState(null)
-  const [showModal, setShowModal]                 = useState(false)
+  const [formations, setFormations]             = useState([])
+  const [loading, setLoading]                   = useState(true)
+  const [error, setError]                       = useState('')
+  const [actionError, setActionError]           = useState('')
+  const [isSaving, setIsSaving]                 = useState(false)
+  const [showModal, setShowModal]               = useState(false)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
-  const [formData, setFormData]                   = useState(FORM_VIDE)
-  const [formationEnCours, setFormationEnCours]   = useState(null)
-  const [idASupprimer, setIdASupprimer]           = useState(null)
-  const [saving, setSaving]                       = useState(false)
+  const [formData, setFormData]                 = useState(FORM_VIDE)
+  const [formationEnCours, setFormationEnCours] = useState(null)
+  const [formationASupprimer, setFormationASupprimer] = useState(null)
 
   useEffect(() => {
-    if (!user || user.role !== 'formateur') return
+    if (user?.role !== 'formateur') return
 
-    const fetchFormations = async () => {
-      setLoading(true)
-      setError(null)
+    let active = true
+
+    const loadFormations = async () => {
       try {
-        const data = await getFormationsFormateur()
-        const items = data.data || data || []
-        // Filtrer seulement les formations du formateur connecté
-        const mesFomations = items.filter(f =>
-            f.formateur?.id === user.id || f.formateur_id === user.id
-        )
-        setFormations(mesFomations)
+        setLoading(true)
+        setError('')
+        const data = await getMyFormations()
+        const mesFomations = data.filter(f => f.formateur?.id === user.id || f.formateur_id === user.id)
+        if (active) setFormations(mesFomations.map(normalizeFormation))
       } catch (err) {
-        setError(err.message || 'Erreur lors du chargement.')
+        if (active) setError(err.message || 'Impossible de charger vos formations.')
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
-    fetchFormations()
+
+    loadFormations()
+    return () => { active = false }
   }, [user])
 
   if (!user) return <Navigate to="/" />
   if (user.role !== 'formateur') return <Navigate to="/dashboard/apprenant" />
 
+  const refreshFormations = async () => {
+    const data = await getMyFormations()
+    const mesFomations = data.filter(f => f.formateur?.id === user.id || f.formateur_id === user.id)
+    setFormations(mesFomations.map(normalizeFormation))
+  }
+
   const ouvrirCreation = () => {
     setFormationEnCours(null)
     setFormData(FORM_VIDE)
+    setActionError('')
     setShowModal(true)
   }
 
   const ouvrirModification = (formation) => {
     setFormationEnCours(formation)
-    setFormData({
-      titre:       formation.titre,
-      niveau:      formation.niveau,
-      categorie:   formation.categorie,
-      description: formation.description,
-    })
+    setFormData({ titre: formation.titre, niveau: formation.niveau, categorie: formation.categorie, description: formation.description })
+    setActionError('')
     setShowModal(true)
   }
 
   const sauvegarder = async () => {
     if (!formData.titre.trim() || !formData.description.trim()) return
-    setSaving(true)
+
     try {
+      setIsSaving(true)
+      setActionError('')
       if (formationEnCours) {
-        const data = await modifierFormation(formationEnCours.id, formData)
-        const updated = data.formation || data
-        setFormations(prev => prev.map(f => f.id === formationEnCours.id ? { ...f, ...updated } : f))
+        await updateFormation(formationEnCours.id, formData)
       } else {
-        const data = await creerFormation(formData)
-        const created = data.formation || data
-        setFormations(prev => [...prev, created])
+        await createFormation(formData)
       }
+      await refreshFormations()
       setShowModal(false)
+      setFormationEnCours(null)
       setFormData(FORM_VIDE)
     } catch (err) {
-      setError(err.message || 'Erreur lors de la sauvegarde.')
+      setActionError(err.message || 'Impossible d\'enregistrer la formation.')
     } finally {
-      setSaving(false)
+      setIsSaving(false)
     }
   }
 
-  const demanderSuppression = (id) => {
-    setIdASupprimer(id)
+  const demanderSuppression = (formation) => {
+    setFormationASupprimer(formation)
+    setActionError('')
     setShowConfirmDelete(true)
   }
 
   const confirmerSuppression = async () => {
+    if (!formationASupprimer?.id) return
+
     try {
-      await supprimerFormation(idASupprimer)
-      setFormations(prev => prev.filter(f => f.id !== idASupprimer))
-    } catch (err) {
-      setError(err.message || 'Erreur lors de la suppression.')
-    } finally {
+      setIsSaving(true)
+      setActionError('')
+      await deleteFormation(formationASupprimer.id)
+      await refreshFormations()
       setShowConfirmDelete(false)
-      setIdASupprimer(null)
+      setFormationASupprimer(null)
+    } catch (err) {
+      setActionError(err.message || 'Impossible de supprimer la formation.')
+    } finally {
+      setIsSaving(false)
     }
   }
 
-  return (
-      <div>
-        {/* En-tête */}
-        <section className="sh-section--dark py-5">
-          <div className="container">
-            <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-              <div>
-                <h1 className="sh-section-title--light mb-1">
-                  Bonjour, {user.name || user.email} 👋
-                </h1>
-                <p className="sh-section-sub--light">
-                  Gérez vos formations et suivez vos apprenants
-                </p>
-              </div>
-              <button className="sh-btn sh-btn--white" onClick={ouvrirCreation}>
-                + Créer une formation
-              </button>
-            </div>
-          </div>
-        </section>
+  const stats = {
+    formations: formations.length,
+    apprenants: formations.reduce((acc, f) => acc + (f.apprenants ?? 0), 0),
+    vues:       formations.reduce((acc, f) => acc + (f.vues ?? 0), 0),
+  }
 
-        {/* Stats */}
-        <section className="py-4" style={{ background: 'var(--brand-mid)' }}>
-          <div className="container">
-            <div className="row g-3 text-center">
-              <div className="col-4">
-                <div style={{ fontSize: 26, fontWeight: 700, color: '#fff' }}>{formations.length}</div>
-                <div style={{ fontSize: 12, color: 'var(--brand-soft)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Formations</div>
-              </div>
-              <div className="col-4">
-                <div style={{ fontSize: 26, fontWeight: 700, color: '#fff' }}>
-                  {formations.reduce((acc, f) => acc + (f.apprenants || 0), 0)}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--brand-soft)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Apprenants</div>
-              </div>
-              <div className="col-4">
-                <div style={{ fontSize: 26, fontWeight: 700, color: '#fff' }}>
-                  {formations.reduce((acc, f) => acc + (f.vues || 0), 0)}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--brand-soft)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Vues totales</div>
-              </div>
-            </div>
-          </div>
-        </section>
+  const saveButtonLabel = isSaving ? 'Enregistrement...' : formationEnCours ? 'Enregistrer' : 'Créer'
 
-        {/* Liste formations */}
-        <section className="sh-section">
-          <div className="container">
-            <h2 className="sh-section-title mb-4">Mes formations</h2>
+  let content
 
-            {loading && (
-                <div className="text-center py-5">
-                  <div className="spinner-border" style={{ color: 'var(--brand-main)' }} role="status" />
-                  <p className="mt-3 small" style={{ color: 'var(--text-secondary)' }}>Chargement...</p>
-                </div>
-            )}
-
-            {!loading && error && <div className="alert alert-danger">{error}</div>}
-
-            {!loading && !error && formations.length === 0 && (
-                <div className="text-center py-5">
-                  <p className="fs-5 fw-semibold" style={{ color: 'var(--brand-deep)' }}>
-                    Vous n'avez pas encore de formation
-                  </p>
-                  <p className="small mt-2 mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    Créez votre première formation en cliquant sur le bouton ci-dessus.
-                  </p>
-                  <button className="sh-btn sh-btn--primary" onClick={ouvrirCreation}>
-                    + Créer une formation
-                  </button>
-                </div>
-            )}
-
-            {!loading && !error && formations.length > 0 && (
-                <div className="row g-4">
-                  {formations.map(f => (
-                      <div className="col-md-4" key={f.id}>
-                        <div className="sh-formation-card">
-                          <div className="sh-formation-card-top">
-                            <span className="sh-cat-tag">{f.categorie}</span>
-                            <span className={`sh-badge ${niveauConfig[f.niveau]?.cls || 'sh-badge-green'}`}>{f.niveau}</span>
-                          </div>
-                          <h6 className="sh-formation-title">{f.titre}</h6>
-                          <p className="sh-formation-desc">{f.description}</p>
-                          <div className="sh-formation-meta">
-                            <span>👥 {f.apprenants || 0} apprenants</span>
-                            <span>👁 {f.vues || 0} vues</span>
-                          </div>
-                          <div className="d-flex gap-2 mt-2">
-                            <Link
-                                to={`/formation/${f.id}`}
-                                className="sh-btn sh-btn--outline flex-fill"
-                                style={{ fontSize: 12, padding: '7px 10px' }}
-                            >
-                              Voir
-                            </Link>
-                            <button
-                                className="sh-btn sh-btn--outline flex-fill"
-                                style={{ fontSize: 12, padding: '7px 10px' }}
-                                onClick={() => ouvrirModification(f)}
-                            >
-                              Modifier
-                            </button>
-                            <button
-                                className="sh-btn flex-fill"
-                                style={{ fontSize: 12, padding: '7px 10px', background: 'var(--red-bg)', color: 'var(--red-text)', borderRadius: '999px' }}
-                                onClick={() => demanderSuppression(f.id)}
-                            >
-                              Supprimer
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                  ))}
-                </div>
-            )}
-          </div>
-        </section>
-
-        {/* Modal création / modification */}
-        <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-          <Modal.Header closeButton>
-            <Modal.Title>{formationEnCours ? 'Modifier la formation' : 'Créer une formation'}</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Form>
-              <Form.Group className="mb-3">
-                <Form.Label>Titre</Form.Label>
-                <Form.Control type="text" placeholder="Titre de la formation" value={formData.titre} onChange={e => setFormData({ ...formData, titre: e.target.value })} />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Catégorie</Form.Label>
-                <Form.Select value={formData.categorie} onChange={e => setFormData({ ...formData, categorie: e.target.value })}>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </Form.Select>
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Niveau</Form.Label>
-                <Form.Select value={formData.niveau} onChange={e => setFormData({ ...formData, niveau: e.target.value })}>
-                  {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
-                </Form.Select>
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Description</Form.Label>
-                <Form.Control as="textarea" rows={3} placeholder="Description de la formation" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
-              </Form.Group>
-            </Form>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="outline-secondary" onClick={() => setShowModal(false)}>Annuler</Button>
-            <Button variant="primary" onClick={sauvegarder} disabled={!formData.titre.trim() || !formData.description.trim() || saving}>
-              {saving ? 'Enregistrement...' : formationEnCours ? 'Enregistrer' : 'Créer'}
-            </Button>
-          </Modal.Footer>
-        </Modal>
-
-        {/* Modal suppression */}
-        <Modal show={showConfirmDelete} onHide={() => setShowConfirmDelete(false)} centered>
-          <Modal.Header closeButton>
-            <Modal.Title>Confirmer la suppression</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <p>Êtes-vous sûr de vouloir supprimer cette formation ? Cette action est irréversible.</p>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="outline-secondary" onClick={() => setShowConfirmDelete(false)}>Annuler</Button>
-            <Button variant="danger" onClick={confirmerSuppression}>Supprimer</Button>
-          </Modal.Footer>
-        </Modal>
+  if (loading) {
+    content = <div className="text-center py-5">Chargement de vos formations...</div>
+  } else if (error) {
+    content = <div className="alert alert-warning">{error}</div>
+  } else if (formations.length === 0) {
+    content = (
+      <div className="text-center py-5">
+        <p className="fs-5 fw-semibold" style={{ color: 'var(--brand-deep)' }}>Vous n'avez pas encore de formation</p>
+        <p className="small mt-2 mb-4" style={{ color: 'var(--text-secondary)' }}>Créez votre première formation.</p>
+        <button className="sh-btn sh-btn--primary" onClick={ouvrirCreation}>+ Créer une formation</button>
       </div>
+    )
+  } else {
+    content = (
+      <div className="row g-4">
+        {formations.map((formation) => {
+          const niveauKey = normalizeNiveau(formation.niveau)
+          return (
+            <div className="col-md-4" key={formation.id}>
+              <div className="sh-formation-card">
+                <div className="sh-formation-card-top">
+                  <span className="sh-cat-tag">{formation.categorie}</span>
+                  <span className={`sh-badge ${niveauConfig[niveauKey]?.cls || 'sh-badge-green'}`}>
+                    {niveauConfig[niveauKey]?.label || formation.niveau}
+                  </span>
+                </div>
+                <h6 className="sh-formation-title">{formation.titre}</h6>
+                <p className="sh-formation-desc">{formation.description}</p>
+                <div className="sh-formation-meta">
+                  <span>👥 {formation.apprenants} apprenants</span>
+                  <span>👁 {formation.vues} vues</span>
+                </div>
+                <div className="d-flex gap-2 mt-2">
+                  <Link to={`/formation/${formation.id}`} className="sh-btn sh-btn--outline flex-fill" style={{ fontSize: 12, padding: '7px 10px' }}>Voir</Link>
+                  <button className="sh-btn sh-btn--outline flex-fill" style={{ fontSize: 12, padding: '7px 10px' }} onClick={() => ouvrirModification(formation)}>Modifier</button>
+                  <button className="sh-btn flex-fill" style={{ fontSize: 12, padding: '7px 10px', background: 'var(--red-bg)', color: 'var(--red-text)', borderRadius: '999px' }} onClick={() => demanderSuppression(formation)}>Supprimer</button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <section className="sh-section--dark py-5">
+        <div className="container">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+              <h1 className="sh-section-title--light mb-1">Bonjour, {user.nom || user.email} 👋</h1>
+              <p className="sh-section-sub--light">Gérez vos formations et suivez vos apprenants</p>
+            </div>
+            <button className="sh-btn sh-btn--white" onClick={ouvrirCreation}>+ Créer une formation</button>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-4" style={{ background: 'var(--brand-mid)' }}>
+        <div className="container">
+          <div className="row g-3 text-center">
+            <div className="col-4">
+              <div style={{ fontSize: 26, fontWeight: 700, color: '#fff' }}>{stats.formations}</div>
+              <div style={{ fontSize: 12, color: 'var(--brand-soft)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Formations</div>
+            </div>
+            <div className="col-4">
+              <div style={{ fontSize: 26, fontWeight: 700, color: '#fff' }}>{stats.apprenants}</div>
+              <div style={{ fontSize: 12, color: 'var(--brand-soft)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Apprenants</div>
+            </div>
+            <div className="col-4">
+              <div style={{ fontSize: 26, fontWeight: 700, color: '#fff' }}>{stats.vues}</div>
+              <div style={{ fontSize: 12, color: 'var(--brand-soft)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Vues totales</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="sh-section">
+        <div className="container">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+            <h2 className="sh-section-title mb-0">Mes formations</h2>
+            <button className="sh-btn sh-btn--primary" onClick={ouvrirCreation}>+ Créer une formation</button>
+          </div>
+          {actionError && <div className="alert alert-danger">{actionError}</div>}
+          {content}
+        </div>
+      </section>
+
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>{formationEnCours ? 'Modifier la formation' : 'Créer une formation'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <label htmlFor="formation-titre" className="form-label">Titre</label>
+              <Form.Control id="formation-titre" type="text" placeholder="Titre" value={formData.titre} onChange={e => setFormData({ ...formData, titre: e.target.value })} />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <label htmlFor="formation-categorie" className="form-label">Catégorie</label>
+              <Form.Select id="formation-categorie" value={formData.categorie} onChange={e => setFormData({ ...formData, categorie: e.target.value })}>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <label htmlFor="formation-niveau" className="form-label">Niveau</label>
+              <Form.Select id="formation-niveau" value={formData.niveau} onChange={e => setFormData({ ...formData, niveau: e.target.value })}>
+                {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <label htmlFor="formation-description" className="form-label">Description</label>
+              <Form.Control id="formation-description" as="textarea" rows={3} placeholder="Description" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setShowModal(false)} disabled={isSaving}>Annuler</Button>
+          <Button variant="primary" onClick={sauvegarder} disabled={isSaving || !formData.titre.trim() || !formData.description.trim()}>{saveButtonLabel}</Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showConfirmDelete} onHide={() => setShowConfirmDelete(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirmer la suppression</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Êtes-vous sûr de vouloir supprimer cette formation ? Cette action est irréversible.</p>
+          {formationASupprimer && <p className="mb-0 small text-muted">Formation : <strong>{formationASupprimer.titre}</strong></p>}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setShowConfirmDelete(false)} disabled={isSaving}>Annuler</Button>
+          <Button variant="danger" onClick={confirmerSuppression} disabled={isSaving}>{isSaving ? 'Suppression...' : 'Supprimer'}</Button>
+        </Modal.Footer>
+      </Modal>
+    </div>
   )
 }
 

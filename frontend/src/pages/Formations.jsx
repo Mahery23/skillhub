@@ -6,9 +6,9 @@ const CATEGORIES = ["Toutes", "Développement web", "Backend", "DevOps", "Design
 const NIVEAUX = ["Tous", "Débutant", "Intermédiaire", "Avancé"]
 
 const niveauConfig = {
-  'Débutant':      { cls: 'sh-badge-green' },
-  'Intermédiaire': { cls: 'sh-badge-amber' },
-  'Avancé':        { cls: 'sh-badge-red'   },
+  debutant: { cls: 'sh-badge-green' },
+  intermediaire: { cls: 'sh-badge-amber' },
+  avance: { cls: 'sh-badge-red' },
 }
 
 function Formations() {
@@ -42,6 +42,12 @@ function Formations() {
     setNiveau('Tous')
   }
 
+  const statusMessage = loading ? (
+      <div className="text-center py-4">Chargement des formations...</div>
+  ) : error ? (
+      <div className="alert alert-warning">{error}</div>
+  ) : null
+
   return (
       <div>
         {/* En-tête */}
@@ -61,6 +67,7 @@ function Formations() {
               <div className="col-md-4">
                 <label className="form-label small fw-semibold" style={{ color: 'var(--text-secondary)' }}>Recherche</label>
                 <input
+                    id="formation-search"
                     type="text"
                     className="form-control"
                     placeholder="Rechercher une formation..."
