@@ -26,7 +26,7 @@ class ActivityLogService
 
         try {
             DB::connection('mongodb')
-                ->collection('activity_logs')
+                ->table('activity_logs')
                 ->insert($payload);
         } catch (Throwable $exception) {
             // Ne pas casser le flux API si MongoDB est indisponible.
@@ -37,4 +37,3 @@ class ActivityLogService
         }
     }
 }
-

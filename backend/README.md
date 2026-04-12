@@ -44,6 +44,9 @@ Repertoires importants:
 - PHP 8.3+
 - Composer 2+
 - MySQL 8+ (ou MariaDB compatible)
+- MongoDB Community Server (service Windows)
+- MongoDB Compass (recommande pour visualiser les logs)
+- mongosh (shell MongoDB, utile pour diagnostic)
 - Node.js 18+ (pour assets Vite)
 
 ## Installation rapide
@@ -190,15 +193,61 @@ Evenements actuellement journalises:
 - `enrollment.created`
 - `enrollment.deleted`
 
+### Installation MongoDB sur Windows (pas a pas)
+
+1. Installer MongoDB Community Server
+   - Telecharger l'installeur: `https://www.mongodb.com/try/download/community`
+   - Pendant l'installation, cocher **Install MongoDB as a Service**
+   - Garder le port par defaut `27017`
+
+2. Verifier que le service est demarre
+
+```powershell
+Get-Service MongoDB
+Get-NetTCPConnection -LocalPort 27017 -State Listen
+```
+
+Attendu: `Status = Running` et un listener sur `127.0.0.1:27017`.
+
+3. Configurer le backend (`.env`)
+
+```dotenv
+MONGODB_URI=mongodb://127.0.0.1:27017
+MONGODB_HOST=127.0.0.1
+MONGODB_PORT=27017
+MONGODB_DATABASE=skillhub_logs
+MONGODB_USERNAME=
+MONGODB_PASSWORD=
+MONGODB_AUTH_DATABASE=admin
+```
+
+4. Recharger la config Laravel
+
+```bash
+php artisan optimize:clear
+```
+
+5. Generer au moins 1 log
+   - Ex: faire un `POST /api/register` ou `POST /api/login`
+   - Ces endpoints ecrivent `user.registered` et `user.logged_in`
+
 ### Verifier dans Compass
 
 1. Ouvrir MongoDB Compass
-2. Se connecter au serveur local (`mongodb://localhost:27017`)
+2. Se connecter au serveur local (`mongodb://127.0.0.1:27017`)
 3. Ouvrir la base `skillhub_logs`
 4. Ouvrir la collection `activity_logs`
-5. Consulter l'onglet **Documents**
+5. Filtre: `{}` puis **Refresh**
+6. Consulter l'onglet **Documents**
 
 Si la collection n'apparait pas encore, c'est souvent parce qu'aucun evenement n'a ete genere.
+
+### Verification rapide en ligne de commande
+
+```powershell
+mongosh "mongodb://127.0.0.1:27017/skillhub_logs" --eval "db.activity_logs.countDocuments()"
+mongosh "mongodb://127.0.0.1:27017/skillhub_logs" --eval "db.activity_logs.find().sort({_id:-1}).limit(5)"
+```
 
 ## Tests et qualite
 
@@ -250,6 +299,32 @@ php artisan optimize:clear
 ```bash
 php artisan migrate:fresh --seed
 ```
+
+### 4) MongoDB: service actif mais collection vide
+
+- Verifier que le backend utilise bien la bonne DB Mongo:
+
+```bash
+php artisan tinker --execute="echo config('database.connections.mongodb.database');"
+```
+
+- Vider le cache de config Laravel puis relancer le serveur API:
+
+```bash
+php artisan optimize:clear
+php artisan serve --host=127.0.0.1 --port=8000
+```
+
+- Declencher un evenement (`/api/register`) puis refresh Compass.
+
+### 5) Erreur `Call to undefined method MongoDB\Database::collection()`
+
+Cause: API d'ecriture Mongo non compatible avec la version du package.
+
+Correctif dans `app/Services/ActivityLogService.php`:
+
+- utiliser `DB::connection('mongodb')->table('activity_logs')->insert(...)`
+- ne pas utiliser `->collection(...)` dans ce projet
 
 ---
 
