@@ -14,6 +14,7 @@ Backend API de SkillHub: authentification JWT, catalogue de formations, modules,
 - [Routes API principales](#routes-api-principales)
 - [Auth et roles](#auth-et-roles)
 - [Base de donnees et migrations](#base-de-donnees-et-migrations)
+- [MongoDB et logs d'activite](#mongodb-et-logs-dactivite)
 - [Tests et qualite](#tests-et-qualite)
 - [Documentation API (OpenAPI)](#documentation-api-openapi)
 - [Depannage](#depannage)
@@ -24,7 +25,7 @@ Backend API de SkillHub: authentification JWT, catalogue de formations, modules,
 - Laravel `^13`
 - JWT: `php-open-source-saver/jwt-auth`
 - MySQL (donnees applicatives)
-- MongoDB (connexion disponible pour logs/usage annexe)
+- MongoDB (logs d'activite / audit)
 - PHPUnit `^12` (tests)
 
 ## Structure du backend
@@ -164,6 +165,40 @@ php artisan migrate
 php artisan migrate:rollback
 php artisan migrate:fresh --seed
 ```
+
+## MongoDB et logs d'activite
+
+MongoDB est utilise pour stocker des **logs d'activite** applicatifs.
+
+- **Connexion**: definie dans `config/database.php` sous le nom `mongodb`
+- **Base par defaut**: `skillhub_logs`
+- **Collection**: `activity_logs`
+
+Le service centralise dans `app/Services/ActivityLogService.php` ecrit les evenements sans casser le flux API si MongoDB est indisponible.
+
+Evenements actuellement journalises:
+
+- `user.registered`
+- `user.logged_in`
+- `user.logged_out`
+- `formation.created`
+- `formation.updated`
+- `formation.deleted`
+- `module.created`
+- `module.updated`
+- `module.deleted`
+- `enrollment.created`
+- `enrollment.deleted`
+
+### Verifier dans Compass
+
+1. Ouvrir MongoDB Compass
+2. Se connecter au serveur local (`mongodb://localhost:27017`)
+3. Ouvrir la base `skillhub_logs`
+4. Ouvrir la collection `activity_logs`
+5. Consulter l'onglet **Documents**
+
+Si la collection n'apparait pas encore, c'est souvent parce qu'aucun evenement n'a ete genere.
 
 ## Tests et qualite
 

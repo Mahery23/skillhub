@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
 use App\Models\Formation;
 use App\Models\User;
+use App\Services\ActivityLogService;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -37,6 +38,12 @@ class EnrollmentController extends Controller
             'progression' => 0,
         ]);
 
+        app(ActivityLogService::class)->log('enrollment.created', [
+            'user_id' => $user->id,
+            'formation_id' => $formation->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
+
         return response()->json([
             'message' => 'Enrollment created successfully',
             'enrollment' => [
@@ -66,6 +73,12 @@ class EnrollmentController extends Controller
                 'message' => 'Aucune inscription trouvée pour cette formation.',
             ], 404);
         }
+
+        app(ActivityLogService::class)->log('enrollment.deleted', [
+            'user_id' => $user->id,
+            'formation_id' => $formation->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
 
         $enrollment->delete();
 
