@@ -68,7 +68,7 @@ class FormationController extends Controller
     public function show(Formation $formation): JsonResponse
     {
         $formation->increment('nombre_de_vues');
-        $formation->refresh()->load('formateur:id,nom');
+        $formation->refresh()->load(['formateur:id,nom', 'modules:id,formation_id,titre,contenu,ordre,date_creation']);
 
         return response()->json([
             'formation' => $this->formatFormation($formation, true),
@@ -174,7 +174,15 @@ class FormationController extends Controller
 
         if ($withDescription) {
             $payload['description'] = $formation->description;
-            $payload['modules'] = [];
+            $payload['modules'] = $formation->modules
+                ->sortBy('ordre')
+                ->values()
+                ->map(fn ($module) => [
+                    'id' => $module->id,
+                    'titre' => $module->titre,
+                    'contenu' => $module->contenu,
+                    'ordre' => $module->ordre,
+                ]);
         } else {
             $payload['mini_description'] = str($formation->description)->limit(120);
         }
