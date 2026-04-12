@@ -1,15 +1,26 @@
+import { useState } from 'react'
 import { Modal, Button, Form } from 'react-bootstrap'
 
-function LoginModal({ show, onHide, onLogin }) {
-    const handleSubmit = (event) => {
+function LoginModal({ show, onHide, onLogin, isLoading, setIsLoading }) {
+    const [error, setError] = useState('')
+
+    const handleSubmit = async (event) => {
         event.preventDefault()
+        setError('')
+        setIsLoading(true)
 
         const formData = new FormData(event.currentTarget)
         const email = (formData.get('email') || '').toString().trim().toLowerCase()
+        const password = (formData.get('password') || '').toString()
         const role = (formData.get('role') || 'apprenant').toString()
-        const name = email ? email.split('@')[0] : 'Utilisateur'
 
-        onLogin({ name, email, role })
+        try {
+            await onLogin({ email, password, role })
+        } catch (submitError) {
+            setError(submitError.message || 'Connexion impossible.')
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (
@@ -19,6 +30,7 @@ function LoginModal({ show, onHide, onLogin }) {
             </Modal.Header>
             <Modal.Body>
                 <Form onSubmit={handleSubmit}>
+                    {error && <div className="alert alert-danger py-2">{error}</div>}
                     <Form.Group className="mb-3">
                         <Form.Label>Email</Form.Label>
                         <Form.Control name="email" type="email" placeholder="votre@email.com" required />
@@ -34,7 +46,9 @@ function LoginModal({ show, onHide, onLogin }) {
                             <option value="formateur">Formateur</option>
                         </Form.Select>
                     </Form.Group>
-                    <Button variant="primary" className="w-100" type="submit">Se connecter</Button>
+                    <Button variant="primary" className="w-100" type="submit" disabled={isLoading}>
+                        {isLoading ? 'Connexion...' : 'Se connecter'}
+                    </Button>
                 </Form>
             </Modal.Body>
         </Modal>

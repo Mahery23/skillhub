@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Modal, Button, Form } from 'react-bootstrap'
 
-function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant' }) {
+function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant', isLoading, setIsLoading }) {
     const [role, setRole] = useState(defaultRole)
+    const [error, setError] = useState('')
 
     useEffect(() => {
         if (show) {
@@ -10,14 +11,23 @@ function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant' }) 
         }
     }, [defaultRole, show])
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault()
+        setError('')
+        setIsLoading(true)
 
         const formData = new FormData(event.currentTarget)
         const name = (formData.get('name') || 'Utilisateur').toString().trim()
         const email = (formData.get('email') || '').toString().trim().toLowerCase()
+        const password = (formData.get('password') || '').toString()
 
-        onRegister({ name, email, role })
+        try {
+            await onRegister({ name, email, password, role })
+        } catch (submitError) {
+            setError(submitError.message || 'Inscription impossible.')
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (
@@ -27,6 +37,7 @@ function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant' }) 
             </Modal.Header>
             <Modal.Body>
                 <Form onSubmit={handleSubmit}>
+                    {error && <div className="alert alert-danger py-2">{error}</div>}
                     <Form.Group className="mb-3">
                         <Form.Label>Nom complet</Form.Label>
                         <Form.Control name="name" type="text" placeholder="Jean Dupont" required />
@@ -46,7 +57,9 @@ function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant' }) 
                             <option value="formateur">Formateur</option>
                         </Form.Select>
                     </Form.Group>
-                    <Button variant="primary" className="w-100" type="submit">S'inscrire</Button>
+                    <Button variant="primary" className="w-100" type="submit" disabled={isLoading}>
+                        {isLoading ? 'Inscription...' : "S'inscrire"}
+                    </Button>
                 </Form>
             </Modal.Body>
         </Modal>

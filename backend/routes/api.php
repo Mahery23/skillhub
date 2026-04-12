@@ -23,4 +23,3 @@ Route::middleware('auth:api')->group(function () {
     Route::put(FORMATION_ROUTE, [FormationController::class, 'update']);
     Route::delete(FORMATION_ROUTE, [FormationController::class, 'destroy']);
 });
-
