@@ -55,8 +55,8 @@ function App() {
             <Routes>
                 <Route path="/" element={<Home user={user} onOpenLogin={() => setShowLogin(true)} onOpenRegister={openRegister} />} />
                 <Route path="/formations" element={<Formations />} />
-                <Route path="/formation/:id" element={<FormationDetail />} />
-                <Route path="/dashboard/formateur" element={<DashboardFormateur />} />
+                <Route path="/formation/:id" element={<FormationDetail user={user} onOpenLogin={() => setShowLogin(true)} />} />
+                <Route path="/dashboard/formateur" element={<DashboardFormateur user={user} />} />
                 <Route path="/dashboard/apprenant" element={<DashboardApprenant />} />
                 <Route path="/apprendre/:id" element={<SuiviFormation />} />
             </Routes>
