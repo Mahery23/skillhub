@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Formation;
+use App\Services\ActivityLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -95,6 +96,14 @@ class FormationController extends Controller
             'nombre_de_vues' => 0,
         ]);
 
+        app(ActivityLogService::class)->log('formation.created', [
+            'user_id' => auth('api')->id(),
+            'formation_id' => $formation->id,
+            'titre' => $formation->titre,
+            'categorie' => $formation->categorie,
+            'niveau' => $formation->niveau,
+        ]);
+
         return response()->json([
             'message' => 'Formation created successfully',
             'formation' => $this->formatFormation($formation->load('formateur:id,nom'), true),
@@ -117,6 +126,14 @@ class FormationController extends Controller
 
         $formation->update($validated);
 
+        app(ActivityLogService::class)->log('formation.updated', [
+            'user_id' => auth('api')->id(),
+            'formation_id' => $formation->id,
+            'titre' => $formation->titre,
+            'categorie' => $formation->categorie,
+            'niveau' => $formation->niveau,
+        ]);
+
         return response()->json([
             'message' => 'Formation updated successfully',
             'formation' => $this->formatFormation($formation->refresh()->load('formateur:id,nom'), true),
@@ -129,6 +146,14 @@ class FormationController extends Controller
     public function destroy(Formation $formation): JsonResponse
     {
         $this->ensureTrainer($formation);
+
+        app(ActivityLogService::class)->log('formation.deleted', [
+            'user_id' => auth('api')->id(),
+            'formation_id' => $formation->id,
+            'titre' => $formation->titre,
+            'categorie' => $formation->categorie,
+            'niveau' => $formation->niveau,
+        ]);
 
         $formation->delete();
 

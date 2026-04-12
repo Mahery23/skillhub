@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\ActivityLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -47,6 +48,12 @@ class AuthController extends Controller
 
         $token = JWTAuth::fromUser($user);
 
+        app(ActivityLogService::class)->log('user.registered', [
+            'user_id' => $user->id,
+            'role' => $user->role,
+            'email' => $user->email,
+        ]);
+
         return response()->json([
             'message' => 'User registered successfully',
             'token' => $token,
@@ -75,6 +82,12 @@ class AuthController extends Controller
         /** @var User $user */
         $user = auth('api')->user();
 
+        app(ActivityLogService::class)->log('user.logged_in', [
+            'user_id' => $user->id,
+            'role' => $user->role,
+            'email' => $user->email,
+        ]);
+
         return response()->json([
             'message' => 'Login successful',
             'token' => $token,
@@ -99,6 +112,16 @@ class AuthController extends Controller
      */
     public function logout(): JsonResponse
     {
+        $user = auth('api')->user();
+
+        if ($user) {
+            app(ActivityLogService::class)->log('user.logged_out', [
+                'user_id' => $user->id,
+                'role' => $user->role,
+                'email' => $user->email,
+            ]);
+        }
+
         auth('api')->logout();
 
         return response()->json([

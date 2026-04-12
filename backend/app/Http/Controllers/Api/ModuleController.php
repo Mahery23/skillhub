@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Formation;
 use App\Models\Module;
+use App\Services\ActivityLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -46,6 +47,14 @@ class ModuleController extends Controller
 
         $module = $formation->modules()->create($validated);
 
+        app(ActivityLogService::class)->log('module.created', [
+            'user_id' => auth('api')->id(),
+            'formation_id' => $formation->id,
+            'module_id' => $module->id,
+            'titre' => $module->titre,
+            'ordre' => $module->ordre,
+        ]);
+
         return response()->json([
             'message' => 'Module created successfully',
             'module' => $this->formatModule($module),
@@ -75,6 +84,14 @@ class ModuleController extends Controller
 
         $module->update($validated);
 
+        app(ActivityLogService::class)->log('module.updated', [
+            'user_id' => auth('api')->id(),
+            'formation_id' => $formation->id,
+            'module_id' => $module->id,
+            'titre' => $module->titre,
+            'ordre' => $module->ordre,
+        ]);
+
         return response()->json([
             'message' => 'Module updated successfully',
             'module' => $this->formatModule($module->refresh()),
@@ -94,6 +111,14 @@ class ModuleController extends Controller
                 'message' => 'Une formation doit contenir au minimum 3 modules.',
             ], 422);
         }
+
+        app(ActivityLogService::class)->log('module.deleted', [
+            'user_id' => auth('api')->id(),
+            'formation_id' => $formation->id,
+            'module_id' => $module->id,
+            'titre' => $module->titre,
+            'ordre' => $module->ordre,
+        ]);
 
         $module->delete();
 
