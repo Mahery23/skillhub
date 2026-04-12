@@ -41,6 +41,14 @@ php artisan boost:install
 
 Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
 
+## Documentation API
+
+La documentation de l'API SkillHub est maintenue en **OpenAPI 3.0** dans :
+
+- `docs/openapi.yaml`
+
+Tu peux l'ouvrir avec Swagger Editor, Swagger UI ou Redoc.
+
 ## Contributing
 
 Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
