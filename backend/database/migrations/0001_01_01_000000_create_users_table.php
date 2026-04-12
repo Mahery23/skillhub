@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Table principale des utilisateurs SkillHub.
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('nom');
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->timestamp('date_creation')->useCurrent();
         });
 
+        // Tables Laravel conservées pour la compatibilité du framework.
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
