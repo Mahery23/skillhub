@@ -2,7 +2,6 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, ''
 
 const buildUrl = (path) => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
-
   return `${API_BASE_URL}${normalizedPath}`
 }
 
@@ -25,13 +24,15 @@ export const apiRequest = async (path, options = {}) => {
     throw new Error('VITE_API_BASE_URL manquant.')
   }
 
+  const { headers: optionHeaders, ...restOptions } = options
+
   const response = await fetch(buildUrl(path), {
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      ...options.headers,
+      ...optionHeaders,
     },
-    ...options,
+    ...restOptions,
   })
 
   const payload = await parseJson(response)
@@ -44,4 +45,3 @@ export const apiRequest = async (path, options = {}) => {
 }
 
 export { API_BASE_URL }
-

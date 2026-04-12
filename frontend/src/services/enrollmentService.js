@@ -3,14 +3,8 @@ import { getStoredToken } from './authService'
 
 const authHeaders = () => {
   const token = getStoredToken()
-
-  if (!token) {
-    throw new Error('Utilisateur non connecté.')
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
-  }
+  if (!token) throw new Error('Utilisateur non connecté.')
+  return { Authorization: `Bearer ${token}` }
 }
 
 const mapEnrollmentItem = (item = {}) => ({
@@ -24,7 +18,6 @@ export const getMyFormations = async () => {
   const payload = await apiRequest('/api/apprenant/formations', {
     headers: authHeaders(),
   })
-
   return Array.isArray(payload?.formations) ? payload.formations.map(mapEnrollmentItem) : []
 }
 
@@ -41,5 +34,3 @@ export const unenrollFromFormation = async (formationId) => {
     headers: authHeaders(),
   })
 }
-
-

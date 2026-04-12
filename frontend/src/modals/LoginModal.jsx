@@ -12,10 +12,9 @@ function LoginModal({ show, onHide, onLogin, isLoading, setIsLoading }) {
         const formData = new FormData(event.currentTarget)
         const email = (formData.get('email') || '').toString().trim().toLowerCase()
         const password = (formData.get('password') || '').toString()
-        const role = (formData.get('role') || 'apprenant').toString()
 
         try {
-            await onLogin({ email, password, role })
+            await onLogin({ email, password })
         } catch (submitError) {
             setError(submitError.message || 'Connexion impossible.')
         } finally {
@@ -30,21 +29,14 @@ function LoginModal({ show, onHide, onLogin, isLoading, setIsLoading }) {
             </Modal.Header>
             <Modal.Body>
                 <Form onSubmit={handleSubmit}>
-                    {error && <div className="alert alert-danger py-2">{error}</div>}
+                    {error && <div className="alert alert-danger py-2 small">{error}</div>}
                     <Form.Group className="mb-3">
                         <Form.Label>Email</Form.Label>
                         <Form.Control name="email" type="email" placeholder="votre@email.com" required />
                     </Form.Group>
-                    <Form.Group className="mb-3">
+                    <Form.Group className="mb-4">
                         <Form.Label>Mot de passe</Form.Label>
-                        <Form.Control name="password" type="password" placeholder="********" required />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Rôle</Form.Label>
-                        <Form.Select name="role" defaultValue="apprenant">
-                            <option value="apprenant">Apprenant</option>
-                            <option value="formateur">Formateur</option>
-                        </Form.Select>
+                        <Form.Control name="password" type="password" placeholder="••••••••" required />
                     </Form.Group>
                     <Button variant="primary" className="w-100" type="submit" disabled={isLoading}>
                         {isLoading ? 'Connexion...' : 'Se connecter'}

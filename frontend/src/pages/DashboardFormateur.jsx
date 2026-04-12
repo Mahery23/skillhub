@@ -1,49 +1,46 @@
 import { useEffect, useState } from 'react'
-import PropTypes from 'prop-types'
 import { Link, Navigate } from 'react-router-dom'
 import { Modal, Button, Form } from 'react-bootstrap'
-import { createFormation, deleteFormation, getMyFormations, updateFormation } from '../services/trainerService'
+import { createFormation, deleteFormation, updateFormation, getMyFormations } from '../services/formationService'
 
-const NIVEAUX = ['Débutant', 'Intermédiaire', 'Avancé']
-const CATEGORIES = ['Développement web', 'Backend', 'DevOps', 'Design', 'Data', 'Marketing']
+const NIVEAUX    = ['Débutant', 'Intermédiaire', 'Avancé']
+const CATEGORIES = ['Développement web', 'DevOps', 'Design', 'Data', 'Marketing']
 
 const niveauConfig = {
-  debutant: { cls: 'sh-badge-green', label: 'Débutant' },
-  intermediaire: { cls: 'sh-badge-amber', label: 'Intermédiaire' },
-  avance: { cls: 'sh-badge-red', label: 'Avancé' },
+  debutant:      { cls: 'sh-badge-green',  label: 'Débutant' },
+  intermediaire: { cls: 'sh-badge-amber',  label: 'Intermédiaire' },
+  avance:        { cls: 'sh-badge-red',    label: 'Avancé' },
 }
 
 const FORM_VIDE = { titre: '', niveau: 'Débutant', categorie: 'Développement web', description: '' }
 
-const normalizeNiveau = (niveau = '') => niveau.toLowerCase().normalize('NFD').replaceAll(/\p{Diacritic}/gu, '')
+const normalizeNiveau = (niveau = '') =>
+  niveau.toLowerCase().normalize('NFD').replaceAll(/\p{Diacritic}/gu, '')
 
-const normalizeFormation = (formation = {}) => ({
-  id: formation.id ?? null,
-  titre: formation.titre || '',
-  niveau: formation.niveau || 'Débutant',
-  categorie: formation.categorie || '',
-  description: formation.description || '',
-  apprenants: formation.apprenants ?? formation.inscriptions_count ?? 0,
-  vues: formation.vues ?? formation.nombre_de_vues ?? 0,
+const normalizeFormation = (f = {}) => ({
+  id:          f.id ?? null,
+  titre:       f.titre || '',
+  niveau:      f.niveau || 'Débutant',
+  categorie:   f.categorie || '',
+  description: f.description || '',
+  apprenants:  f.apprenants ?? 0,
+  vues:        f.vues ?? 0,
 })
 
 function DashboardFormateur({ user }) {
-  const userRole = user?.role || ''
-  const [formations, setFormations] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [actionError, setActionError] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
-  const [showModal, setShowModal] = useState(false)
+  const [formations, setFormations]             = useState([])
+  const [loading, setLoading]                   = useState(true)
+  const [error, setError]                       = useState('')
+  const [actionError, setActionError]           = useState('')
+  const [isSaving, setIsSaving]                 = useState(false)
+  const [showModal, setShowModal]               = useState(false)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
-  const [formData, setFormData] = useState(FORM_VIDE)
+  const [formData, setFormData]                 = useState(FORM_VIDE)
   const [formationEnCours, setFormationEnCours] = useState(null)
   const [formationASupprimer, setFormationASupprimer] = useState(null)
 
   useEffect(() => {
-    if (userRole !== 'formateur') {
-      return
-    }
+    if (user?.role !== 'formateur') return
 
     let active = true
 
@@ -52,34 +49,26 @@ function DashboardFormateur({ user }) {
         setLoading(true)
         setError('')
         const data = await getMyFormations()
-
-        if (active) {
-          setFormations(data.map(normalizeFormation))
-        }
-      } catch (loadError) {
-        if (active) {
-          setError(loadError.message || 'Impossible de charger vos formations.')
-        }
+        const mesFomations = data.filter(f => f.formateur?.id === user.id || f.formateur_id === user.id)
+        if (active) setFormations(mesFomations.map(normalizeFormation))
+      } catch (err) {
+        if (active) setError(err.message || 'Impossible de charger vos formations.')
       } finally {
-        if (active) {
-          setLoading(false)
-        }
+        if (active) setLoading(false)
       }
     }
 
     loadFormations()
-
-    return () => {
-      active = false
-    }
-  }, [userRole])
+    return () => { active = false }
+  }, [user])
 
   if (!user) return <Navigate to="/" />
-  if (userRole !== 'formateur') return <Navigate to="/dashboard/apprenant" />
+  if (user.role !== 'formateur') return <Navigate to="/dashboard/apprenant" />
 
   const refreshFormations = async () => {
     const data = await getMyFormations()
-    setFormations(data.map(normalizeFormation))
+    const mesFomations = data.filter(f => f.formateur?.id === user.id || f.formateur_id === user.id)
+    setFormations(mesFomations.map(normalizeFormation))
   }
 
   const ouvrirCreation = () => {
@@ -91,37 +80,28 @@ function DashboardFormateur({ user }) {
 
   const ouvrirModification = (formation) => {
     setFormationEnCours(formation)
-    setFormData({
-      titre: formation.titre,
-      niveau: formation.niveau,
-      categorie: formation.categorie,
-      description: formation.description,
-    })
+    setFormData({ titre: formation.titre, niveau: formation.niveau, categorie: formation.categorie, description: formation.description })
     setActionError('')
     setShowModal(true)
   }
 
   const sauvegarder = async () => {
-    if (!formData.titre.trim() || !formData.description.trim()) {
-      return
-    }
+    if (!formData.titre.trim() || !formData.description.trim()) return
 
     try {
       setIsSaving(true)
       setActionError('')
-
       if (formationEnCours) {
         await updateFormation(formationEnCours.id, formData)
       } else {
         await createFormation(formData)
       }
-
       await refreshFormations()
       setShowModal(false)
       setFormationEnCours(null)
       setFormData(FORM_VIDE)
-    } catch (saveError) {
-      setActionError(saveError.message || 'Impossible d’enregistrer la formation.')
+    } catch (err) {
+      setActionError(err.message || 'Impossible d\'enregistrer la formation.')
     } finally {
       setIsSaving(false)
     }
@@ -134,9 +114,7 @@ function DashboardFormateur({ user }) {
   }
 
   const confirmerSuppression = async () => {
-    if (!formationASupprimer?.id) {
-      return
-    }
+    if (!formationASupprimer?.id) return
 
     try {
       setIsSaving(true)
@@ -145,8 +123,8 @@ function DashboardFormateur({ user }) {
       await refreshFormations()
       setShowConfirmDelete(false)
       setFormationASupprimer(null)
-    } catch (deleteError) {
-      setActionError(deleteError.message || 'Impossible de supprimer la formation.')
+    } catch (err) {
+      setActionError(err.message || 'Impossible de supprimer la formation.')
     } finally {
       setIsSaving(false)
     }
@@ -154,17 +132,11 @@ function DashboardFormateur({ user }) {
 
   const stats = {
     formations: formations.length,
-    apprenants: formations.reduce((acc, formation) => acc + (formation.apprenants ?? 0), 0),
-    vues: formations.reduce((acc, formation) => acc + (formation.vues ?? 0), 0),
+    apprenants: formations.reduce((acc, f) => acc + (f.apprenants ?? 0), 0),
+    vues:       formations.reduce((acc, f) => acc + (f.vues ?? 0), 0),
   }
 
-  let saveButtonLabel = 'Créer'
-
-  if (isSaving) {
-    saveButtonLabel = 'Enregistrement...'
-  } else if (formationEnCours) {
-    saveButtonLabel = 'Enregistrer'
-  }
+  const saveButtonLabel = isSaving ? 'Enregistrement...' : formationEnCours ? 'Enregistrer' : 'Créer'
 
   let content
 
@@ -175,15 +147,9 @@ function DashboardFormateur({ user }) {
   } else if (formations.length === 0) {
     content = (
       <div className="text-center py-5">
-        <p className="fs-5 fw-semibold" style={{ color: 'var(--brand-deep)' }}>
-          Vous n'avez pas encore de formation
-        </p>
-        <p className="small mt-2 mb-4" style={{ color: 'var(--text-secondary)' }}>
-          Créez votre première formation en cliquant sur le bouton ci-dessous.
-        </p>
-        <button className="sh-btn sh-btn--primary" onClick={ouvrirCreation}>
-          + Créer une formation
-        </button>
+        <p className="fs-5 fw-semibold" style={{ color: 'var(--brand-deep)' }}>Vous n'avez pas encore de formation</p>
+        <p className="small mt-2 mb-4" style={{ color: 'var(--text-secondary)' }}>Créez votre première formation.</p>
+        <button className="sh-btn sh-btn--primary" onClick={ouvrirCreation}>+ Créer une formation</button>
       </div>
     )
   } else {
@@ -191,7 +157,6 @@ function DashboardFormateur({ user }) {
       <div className="row g-4">
         {formations.map((formation) => {
           const niveauKey = normalizeNiveau(formation.niveau)
-
           return (
             <div className="col-md-4" key={formation.id}>
               <div className="sh-formation-card">
@@ -208,27 +173,9 @@ function DashboardFormateur({ user }) {
                   <span>👁 {formation.vues} vues</span>
                 </div>
                 <div className="d-flex gap-2 mt-2">
-                  <Link
-                    to={`/formation/${formation.id}`}
-                    className="sh-btn sh-btn--outline flex-fill"
-                    style={{ fontSize: 12, padding: '7px 10px' }}
-                  >
-                    Voir
-                  </Link>
-                  <button
-                    className="sh-btn sh-btn--outline flex-fill"
-                    style={{ fontSize: 12, padding: '7px 10px' }}
-                    onClick={() => ouvrirModification(formation)}
-                  >
-                    Modifier
-                  </button>
-                  <button
-                    className="sh-btn flex-fill"
-                    style={{ fontSize: 12, padding: '7px 10px', background: 'var(--red-bg)', color: 'var(--red-text)', borderRadius: '999px' }}
-                    onClick={() => demanderSuppression(formation)}
-                  >
-                    Supprimer
-                  </button>
+                  <Link to={`/formation/${formation.id}`} className="sh-btn sh-btn--outline flex-fill" style={{ fontSize: 12, padding: '7px 10px' }}>Voir</Link>
+                  <button className="sh-btn sh-btn--outline flex-fill" style={{ fontSize: 12, padding: '7px 10px' }} onClick={() => ouvrirModification(formation)}>Modifier</button>
+                  <button className="sh-btn flex-fill" style={{ fontSize: 12, padding: '7px 10px', background: 'var(--red-bg)', color: 'var(--red-text)', borderRadius: '999px' }} onClick={() => demanderSuppression(formation)}>Supprimer</button>
                 </div>
               </div>
             </div>
@@ -247,9 +194,7 @@ function DashboardFormateur({ user }) {
               <h1 className="sh-section-title--light mb-1">Bonjour, {user.nom || user.email} 👋</h1>
               <p className="sh-section-sub--light">Gérez vos formations et suivez vos apprenants</p>
             </div>
-            <button className="sh-btn sh-btn--white" onClick={ouvrirCreation}>
-              + Créer une formation
-            </button>
+            <button className="sh-btn sh-btn--white" onClick={ouvrirCreation}>+ Créer une formation</button>
           </div>
         </div>
       </section>
@@ -277,11 +222,8 @@ function DashboardFormateur({ user }) {
         <div className="container">
           <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
             <h2 className="sh-section-title mb-0">Mes formations</h2>
-            <button className="sh-btn sh-btn--primary" onClick={ouvrirCreation}>
-              + Créer une formation
-            </button>
+            <button className="sh-btn sh-btn--primary" onClick={ouvrirCreation}>+ Créer une formation</button>
           </div>
-
           {actionError && <div className="alert alert-danger">{actionError}</div>}
           {content}
         </div>
@@ -295,66 +237,29 @@ function DashboardFormateur({ user }) {
           <Form>
             <Form.Group className="mb-3">
               <label htmlFor="formation-titre" className="form-label">Titre</label>
-              <Form.Control
-                id="formation-titre"
-                type="text"
-                placeholder="Titre de la formation"
-                value={formData.titre}
-                onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
-              />
+              <Form.Control id="formation-titre" type="text" placeholder="Titre" value={formData.titre} onChange={e => setFormData({ ...formData, titre: e.target.value })} />
             </Form.Group>
             <Form.Group className="mb-3">
               <label htmlFor="formation-categorie" className="form-label">Catégorie</label>
-              <Form.Select
-                id="formation-categorie"
-                value={formData.categorie}
-                onChange={(e) => setFormData({ ...formData, categorie: e.target.value })}
-              >
-                {CATEGORIES.map((categorie) => (
-                  <option key={categorie} value={categorie}>
-                    {categorie}
-                  </option>
-                ))}
+              <Form.Select id="formation-categorie" value={formData.categorie} onChange={e => setFormData({ ...formData, categorie: e.target.value })}>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
               <label htmlFor="formation-niveau" className="form-label">Niveau</label>
-              <Form.Select
-                id="formation-niveau"
-                value={formData.niveau}
-                onChange={(e) => setFormData({ ...formData, niveau: e.target.value })}
-              >
-                {NIVEAUX.map((niveau) => (
-                  <option key={niveau} value={niveau}>
-                    {niveau}
-                  </option>
-                ))}
+              <Form.Select id="formation-niveau" value={formData.niveau} onChange={e => setFormData({ ...formData, niveau: e.target.value })}>
+                {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
               <label htmlFor="formation-description" className="form-label">Description</label>
-              <Form.Control
-                id="formation-description"
-                as="textarea"
-                rows={3}
-                placeholder="Description de la formation"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
+              <Form.Control id="formation-description" as="textarea" rows={3} placeholder="Description" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
             </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="outline-secondary" onClick={() => setShowModal(false)} disabled={isSaving}>
-            Annuler
-          </Button>
-          <Button
-            variant="primary"
-            onClick={sauvegarder}
-            disabled={isSaving || !formData.titre.trim() || !formData.description.trim()}
-          >
-            {saveButtonLabel}
-          </Button>
+          <Button variant="outline-secondary" onClick={() => setShowModal(false)} disabled={isSaving}>Annuler</Button>
+          <Button variant="primary" onClick={sauvegarder} disabled={isSaving || !formData.titre.trim() || !formData.description.trim()}>{saveButtonLabel}</Button>
         </Modal.Footer>
       </Modal>
 
@@ -364,33 +269,15 @@ function DashboardFormateur({ user }) {
         </Modal.Header>
         <Modal.Body>
           <p>Êtes-vous sûr de vouloir supprimer cette formation ? Cette action est irréversible.</p>
-          {formationASupprimer && (
-            <p className="mb-0 small text-muted">
-              Formation : <strong>{formationASupprimer.titre}</strong>
-            </p>
-          )}
+          {formationASupprimer && <p className="mb-0 small text-muted">Formation : <strong>{formationASupprimer.titre}</strong></p>}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="outline-secondary" onClick={() => setShowConfirmDelete(false)} disabled={isSaving}>
-            Annuler
-          </Button>
-          <Button variant="danger" onClick={confirmerSuppression} disabled={isSaving}>
-            {isSaving ? 'Suppression...' : 'Supprimer'}
-          </Button>
+          <Button variant="outline-secondary" onClick={() => setShowConfirmDelete(false)} disabled={isSaving}>Annuler</Button>
+          <Button variant="danger" onClick={confirmerSuppression} disabled={isSaving}>{isSaving ? 'Suppression...' : 'Supprimer'}</Button>
         </Modal.Footer>
       </Modal>
     </div>
   )
 }
 
-DashboardFormateur.propTypes = {
-  user: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    nom: PropTypes.string,
-    email: PropTypes.string,
-    role: PropTypes.string,
-  }),
-}
-
 export default DashboardFormateur
-

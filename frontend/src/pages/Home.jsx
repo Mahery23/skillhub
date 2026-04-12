@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { getFormations } from '../services/formationService'
 
@@ -27,82 +27,21 @@ const valeurs = [
     { icon: '◆', titre: 'Excellence',    desc: 'Des contenus de qualité créés par des formateurs passionnés et experts.' },
 ]
 
-function Home(props) {
-    const user = props?.user || null
-    const onOpenLogin = props?.onOpenLogin || (() => {})
-    const onOpenRegister = props?.onOpenRegister || (() => {})
-    const userRole = user?.role || ''
-    const dashboardPath = userRole === 'formateur' ? '/dashboard/formateur' : '/dashboard/apprenant'
+function Home({ user, onOpenLogin, onOpenRegister }) {
     const [formationsUne, setFormationsUne] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState('')
 
     useEffect(() => {
-        let active = true
-
-        const loadFormations = async () => {
+        const fetchFormations = async () => {
             try {
-                setLoading(true)
-                setError('')
-                const formations = await getFormations()
-
-                if (active) {
-                    setFormationsUne(formations.slice(0, 3))
-                }
-            } catch (loadError) {
-                if (active) {
-                    setError(loadError.message || 'Impossible de charger les formations.')
-                }
-            } finally {
-                if (active) {
-                    setLoading(false)
-                }
+                const data = await getFormations()
+                const items = Array.isArray(data) ? data : data.data || []
+                setFormationsUne(items.slice(0, 3))
+            } catch {
+                // Si l'API échoue, on garde le tableau vide silencieusement
             }
         }
-
-        loadFormations()
-
-        return () => {
-            active = false
-        }
+        fetchFormations()
     }, [])
-
-    const formatDescription = (formation) => formation?.mini_description || formation?.description || ''
-    const featuredFormationsContent = loading ? (
-        <div className="text-center py-4">Chargement des formations...</div>
-    ) : error ? (
-        <div className="alert alert-warning mb-0">{error}</div>
-    ) : formationsUne.length > 0 ? (
-        <div className="row g-4">
-            {formationsUne.map((formation) => {
-                const badgeKey = (formation.niveau || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')
-
-                return (
-                    <div className="col-md-4" key={formation.id}>
-                        <div className="sh-formation-card">
-                            <div className="sh-formation-card-top">
-                                <span className="sh-cat-tag">{formation.categorie}</span>
-                                <span className={`sh-badge ${niveauConfig[badgeKey]?.cls || 'sh-badge-green'}`}>
-                                    {niveauConfig[badgeKey]?.label || formation.niveau}
-                                </span>
-                            </div>
-                            <h6 className="sh-formation-title">{formation.titre}</h6>
-                            <p className="sh-formation-desc">{formatDescription(formation)}</p>
-                            <div className="sh-formation-meta">
-                                <span>👥 {formation.apprenants ?? 0} apprenants</span>
-                                <span>👁 {formation.vues ?? 0} vues</span>
-                            </div>
-                            <Link to={`/formation/${formation.id}`} className="sh-btn sh-btn--card-cta">
-                                Voir le détail
-                            </Link>
-                        </div>
-                    </div>
-                )
-            })}
-        </div>
-    ) : (
-        <div className="text-center py-4">Aucune formation disponible pour le moment.</div>
-    )
 
     return (
         <div className="sh-home">
@@ -262,7 +201,40 @@ function Home(props) {
                         </div>
                         <Link to="/formations" className="sh-link-more">Voir toutes →</Link>
                     </div>
-                    {featuredFormationsContent}
+
+                    {formationsUne.length === 0 ? (
+                        <div className="text-center py-4">
+                            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
+                                Aucune formation disponible pour le moment.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="row g-4">
+                            {formationsUne.map(f => (
+                                <div className="col-md-4" key={f.id}>
+                                    <div className="sh-formation-card">
+                                        <div className="sh-formation-card-top">
+                                            <span className="sh-cat-tag">{f.categorie}</span>
+                                            <span className={`sh-badge ${niveauConfig[f.niveau]?.cls || 'sh-badge-green'}`}>
+                                                {niveauConfig[f.niveau]?.label || f.niveau}
+                                            </span>
+                                        </div>
+                                        <h6 className="sh-formation-title">{f.titre}</h6>
+                                        <p className="sh-formation-desc">
+                                            {f.mini_description || f.description || ''}
+                                        </p>
+                                        <div className="sh-formation-meta">
+                                            <span>👥 {f.apprenants ?? 0} apprenants</span>
+                                            <span>👁 {f.vues ?? 0} vues</span>
+                                        </div>
+                                        <Link to={`/formation/${f.id}`} className="sh-btn sh-btn--card-cta">
+                                            Voir le détail
+                                        </Link>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 

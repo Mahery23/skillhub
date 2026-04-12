@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom'
 
 function Navbar({ user, onOpenLogin, onOpenRegister, onLogout }) {
     const profilePath = user?.role === 'formateur' ? '/dashboard/formateur' : '/dashboard/apprenant'
+    const profileLabel = user?.role === 'formateur' ? 'Dashboard formateur' : 'Mon dashboard'
 
     return (
         <nav className="navbar navbar-expand-lg sticky-top skillhub-navbar">
@@ -17,11 +18,14 @@ function Navbar({ user, onOpenLogin, onOpenRegister, onLogout }) {
 
                     {user ? (
                         <>
+                            <span className="skillhub-nav-link text-white small" style={{ fontSize: 13 }}>
+                                Bonjour, {user.name}
+                            </span>
                             <Link className="btn btn-sm skillhub-btn-secondary" to={profilePath}>
-                                {user.name || 'Mon profil'}
+                                {profileLabel}
                             </Link>
                             <button className="btn btn-sm skillhub-btn-ghost" onClick={onLogout}>
-                                Se deconnecter
+                                Se déconnecter
                             </button>
                         </>
                     ) : (
