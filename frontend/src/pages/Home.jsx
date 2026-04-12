@@ -1,10 +1,6 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-
-const formationsUne = [
-    { id: 1, titre: "Introduction à React", niveau: "Débutant", categorie: "Développement web", description: "Apprenez les bases de React.js et construisez vos premières interfaces modernes.", apprenants: 35, vues: 120 },
-    { id: 2, titre: "Laravel & API REST", niveau: "Intermédiaire", categorie: "Backend", description: "Construisez une API REST complète avec authentification JWT et bonnes pratiques.", apprenants: 22, vues: 98 },
-    { id: 3, titre: "Docker & DevOps", niveau: "Avancé", categorie: "DevOps", description: "Maîtrisez la conteneurisation et le déploiement d'applications en production.", apprenants: 18, vues: 75 },
-]
+import { getFormations } from '../services/formationService'
 
 const niveauConfig = {
     'Débutant':      { label: 'Débutant',      cls: 'sh-badge-green' },
@@ -32,6 +28,21 @@ const valeurs = [
 ]
 
 function Home({ user, onOpenLogin, onOpenRegister }) {
+    const [formationsUne, setFormationsUne] = useState([])
+
+    useEffect(() => {
+        const fetchFormations = async () => {
+            try {
+                const data = await getFormations()
+                const items = Array.isArray(data) ? data : data.data || []
+                setFormationsUne(items.slice(0, 3))
+            } catch {
+                // Si l'API échoue, on garde le tableau vide silencieusement
+            }
+        }
+        fetchFormations()
+    }, [])
+
     return (
         <div className="sh-home">
 
@@ -190,27 +201,40 @@ function Home({ user, onOpenLogin, onOpenRegister }) {
                         </div>
                         <Link to="/formations" className="sh-link-more">Voir toutes →</Link>
                     </div>
-                    <div className="row g-4">
-                        {formationsUne.map(f => (
-                            <div className="col-md-4" key={f.id}>
-                                <div className="sh-formation-card">
-                                    <div className="sh-formation-card-top">
-                                        <span className="sh-cat-tag">{f.categorie}</span>
-                                        <span className={`sh-badge ${niveauConfig[f.niveau].cls}`}>{niveauConfig[f.niveau].label}</span>
+
+                    {formationsUne.length === 0 ? (
+                        <div className="text-center py-4">
+                            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
+                                Aucune formation disponible pour le moment.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="row g-4">
+                            {formationsUne.map(f => (
+                                <div className="col-md-4" key={f.id}>
+                                    <div className="sh-formation-card">
+                                        <div className="sh-formation-card-top">
+                                            <span className="sh-cat-tag">{f.categorie}</span>
+                                            <span className={`sh-badge ${niveauConfig[f.niveau]?.cls || 'sh-badge-green'}`}>
+                                                {niveauConfig[f.niveau]?.label || f.niveau}
+                                            </span>
+                                        </div>
+                                        <h6 className="sh-formation-title">{f.titre}</h6>
+                                        <p className="sh-formation-desc">
+                                            {f.mini_description || f.description || ''}
+                                        </p>
+                                        <div className="sh-formation-meta">
+                                            <span>👥 {f.apprenants ?? 0} apprenants</span>
+                                            <span>👁 {f.vues ?? 0} vues</span>
+                                        </div>
+                                        <Link to={`/formation/${f.id}`} className="sh-btn sh-btn--card-cta">
+                                            Voir le détail
+                                        </Link>
                                     </div>
-                                    <h6 className="sh-formation-title">{f.titre}</h6>
-                                    <p className="sh-formation-desc">{f.description}</p>
-                                    <div className="sh-formation-meta">
-                                        <span>👥 {f.apprenants} apprenants</span>
-                                        <span>👁 {f.vues} vues</span>
-                                    </div>
-                                    <Link to={`/formation/${f.id}`} className="sh-btn sh-btn--card-cta">
-                                        Voir le détail
-                                    </Link>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 

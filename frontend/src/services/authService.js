@@ -103,7 +103,7 @@ export const getStoredUser = () => {
   }
 }
 
-const getStoredToken = () => localStorage.getItem(TOKEN_KEY)
+export const getStoredToken = () => localStorage.getItem(TOKEN_KEY)
 
 export const getProfile = async () => {
   const token = getStoredToken()
@@ -153,6 +153,7 @@ export const register = async (payload) => {
 export const logout = () => {
   clearSession()
 }
+
 
 
 

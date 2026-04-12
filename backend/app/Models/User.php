@@ -10,9 +10,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
-/**
- * Représente un utilisateur SkillHub authentifié par JWT.
- */
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */
@@ -32,31 +29,18 @@ class User extends Authenticatable implements JWTSubject
     public const CREATED_AT = 'date_creation';
     public const UPDATED_AT = null;
 
-    /**
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'date_creation' => 'datetime',
-            'mot_de_passe' => 'hashed',
+            'mot_de_passe'  => 'hashed',
         ];
     }
 
-    public function getJWTIdentifier(): mixed
+    // ← Dire à Laravel quelle colonne est le mot de passe
+    public function getAuthPasswordName(): string
     {
-        return $this->getKey();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getJWTCustomClaims(): array
-    {
-        return [
-            'role' => $this->role,
-            'nom' => $this->nom,
-        ];
+        return 'mot_de_passe';
     }
 
     public function getAuthPassword(): string
@@ -64,30 +48,36 @@ class User extends Authenticatable implements JWTSubject
         return $this->mot_de_passe;
     }
 
-    /**
-     * @return HasMany<Formation, $this>
-     */
+    public function getJWTIdentifier(): mixed
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims(): array
+    {
+        return [
+            'role' => $this->role,
+            'nom'  => $this->nom,
+        ];
+    }
+
     public function formations(): HasMany
     {
         return $this->hasMany(Formation::class, 'formateur_id');
     }
 
-    /**
-     * Retourne les inscriptions de l'apprenant.
-     *
-     * @return HasMany<Enrollment, $this>
-     */
     public function inscriptions(): HasMany
     {
         return $this->hasMany(Enrollment::class, 'utilisateur_id');
     }
 
-    /**
-     * Retourne les formations suivies par l'apprenant.
-     */
     public function formationsSuivies(): BelongsToMany
     {
-        return $this->belongsToMany(Formation::class, 'enrollments', 'utilisateur_id', 'formation_id')
-            ->withPivot(['progression', 'date_inscription']);
+        return $this->belongsToMany(
+            Formation::class,
+            'enrollments',
+            'utilisateur_id',
+            'formation_id'
+        )->withPivot(['progression', 'date_inscription']);
     }
 }
