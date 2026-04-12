@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import PropTypes from 'prop-types'
 import { getFormations } from '../services/formationService'
 
 const niveauConfig = {
@@ -27,6 +28,12 @@ const valeurs = [
     { icon: '◆', titre: 'Excellence',    desc: 'Des contenus de qualité créés par des formateurs passionnés et experts.' },
 ]
 
+const normalizeFormationsPayload = (payload) => {
+    if (Array.isArray(payload)) return payload
+    if (Array.isArray(payload?.data)) return payload.data
+    return []
+}
+
 function Home(props) {
     const user = props?.user || null
     const onOpenLogin = props?.onOpenLogin || (() => {})
@@ -44,7 +51,8 @@ function Home(props) {
             try {
                 setLoading(true)
                 setError('')
-                const formations = await getFormations()
+                const payload = await getFormations()
+                const formations = normalizeFormationsPayload(payload)
 
                 if (active) {
                     setFormationsUne(formations.slice(0, 3))
@@ -68,41 +76,84 @@ function Home(props) {
     }, [])
 
     const formatDescription = (formation) => formation?.mini_description || formation?.description || ''
-    const featuredFormationsContent = loading ? (
-        <div className="text-center py-4">Chargement des formations...</div>
-    ) : error ? (
-        <div className="alert alert-warning mb-0">{error}</div>
-    ) : formationsUne.length > 0 ? (
-        <div className="row g-4">
-            {formationsUne.map((formation) => {
-                const badgeKey = (formation.niveau || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')
 
-                return (
-                    <div className="col-md-4" key={formation.id}>
-                        <div className="sh-formation-card">
-                            <div className="sh-formation-card-top">
-                                <span className="sh-cat-tag">{formation.categorie}</span>
-                                <span className={`sh-badge ${niveauConfig[badgeKey]?.cls || 'sh-badge-green'}`}>
-                                    {niveauConfig[badgeKey]?.label || formation.niveau}
-                                </span>
+    let featuredFormationsContent
+    let heroActionsContent
+    let ctaActionsContent
+
+    if (loading) {
+        featuredFormationsContent = <div className="text-center py-4">Chargement des formations...</div>
+    } else if (error) {
+        featuredFormationsContent = <div className="alert alert-warning mb-0">{error}</div>
+    } else if (formationsUne.length === 0) {
+        featuredFormationsContent = <div className="text-center py-4">Aucune formation disponible pour le moment.</div>
+    } else {
+        featuredFormationsContent = (
+            <div className="row g-4">
+                {formationsUne.map((formation) => {
+                    const badgeKey = (formation.niveau || '').toLowerCase().normalize('NFD').replaceAll(/\p{Diacritic}/gu, '')
+
+                    return (
+                        <div className="col-md-4" key={formation.id}>
+                            <div className="sh-formation-card">
+                                <div className="sh-formation-card-top">
+                                    <span className="sh-cat-tag">{formation.categorie}</span>
+                                    <span className={`sh-badge ${niveauConfig[badgeKey]?.cls || 'sh-badge-green'}`}>
+                                        {niveauConfig[badgeKey]?.label || formation.niveau}
+                                    </span>
+                                </div>
+                                <h6 className="sh-formation-title">{formation.titre}</h6>
+                                <p className="sh-formation-desc">{formatDescription(formation)}</p>
+                                <div className="sh-formation-meta">
+                                    <span>👥 {formation.apprenants ?? 0} apprenants</span>
+                                    <span>👁 {formation.vues ?? 0} vues</span>
+                                </div>
+                                <Link to={`/formation/${formation.id}`} className="sh-btn sh-btn--card-cta">
+                                    Voir le détail
+                                </Link>
                             </div>
-                            <h6 className="sh-formation-title">{formation.titre}</h6>
-                            <p className="sh-formation-desc">{formatDescription(formation)}</p>
-                            <div className="sh-formation-meta">
-                                <span>👥 {formation.apprenants ?? 0} apprenants</span>
-                                <span>👁 {formation.vues ?? 0} vues</span>
-                            </div>
-                            <Link to={`/formation/${formation.id}`} className="sh-btn sh-btn--card-cta">
-                                Voir le détail
-                            </Link>
                         </div>
-                    </div>
-                )
-            })}
-        </div>
-    ) : (
-        <div className="text-center py-4">Aucune formation disponible pour le moment.</div>
-    )
+                    )
+                })}
+            </div>
+        )
+    }
+
+    if (user) {
+        heroActionsContent = (
+            <Link to={dashboardPath} className="sh-btn sh-btn--primary">
+                Mon dashboard
+            </Link>
+        )
+
+        ctaActionsContent = (
+            <Link to={dashboardPath} className="sh-btn sh-btn--white">
+                Mon dashboard
+            </Link>
+        )
+    } else {
+        heroActionsContent = (
+            <>
+                <button className="sh-btn sh-btn--primary" onClick={() => onOpenRegister('apprenant')}>
+                    Commencer gratuitement
+                </button>
+                <button className="sh-btn sh-btn--ghost" onClick={onOpenLogin}>
+                    Se connecter
+                </button>
+            </>
+        )
+
+        ctaActionsContent = (
+            <>
+                <button className="sh-btn sh-btn--white" onClick={() => onOpenRegister('apprenant')}>
+                    Commencer gratuitement
+                </button>
+                <Link to="/formations" className="sh-btn sh-btn--ghost-white">
+                    Voir les formations
+                </Link>
+            </>
+        )
+    }
 
     return (
         <div className="sh-home">
@@ -124,20 +175,7 @@ function Home(props) {
                                 SkillHub met en relation formateurs experts et apprenants motivés autour de formations structurées, accessibles à tous et entièrement gratuites.
                             </p>
                             <div className="sh-hero-actions">
-                                {user ? (
-                                    <Link to={dashboardPath} className="sh-btn sh-btn--primary">
-                                        Mon dashboard
-                                    </Link>
-                                ) : (
-                                    <>
-                                        <button className="sh-btn sh-btn--primary" onClick={() => onOpenRegister('apprenant')}>
-                                            Commencer gratuitement
-                                        </button>
-                                        <button className="sh-btn sh-btn--ghost" onClick={onOpenLogin}>
-                                            Se connecter
-                                        </button>
-                                    </>
-                                )}
+                                {heroActionsContent}
                                 <Link to="/formations" className="sh-btn sh-btn--outline">
                                     Voir les formations
                                 </Link>
@@ -320,20 +358,7 @@ function Home(props) {
                     <h2 className="sh-cta-title">Prêt à commencer ?</h2>
                     <p className="sh-cta-sub">Rejoignez des milliers d'apprenants et formateurs sur SkillHub — c'est gratuit.</p>
                     <div className="sh-cta-actions">
-                        {user ? (
-                            <Link to={dashboardPath} className="sh-btn sh-btn--white">
-                                Mon dashboard
-                            </Link>
-                        ) : (
-                            <>
-                                <button className="sh-btn sh-btn--white" onClick={() => onOpenRegister('apprenant')}>
-                                    Commencer gratuitement
-                                </button>
-                                <Link to="/formations" className="sh-btn sh-btn--ghost-white">
-                                    Voir les formations
-                                </Link>
-                            </>
-                        )}
+                        {ctaActionsContent}
                     </div>
                 </div>
             </section>
@@ -343,4 +368,12 @@ function Home(props) {
 }
 
 export default Home
+
+Home.propTypes = {
+    user: PropTypes.shape({
+        role: PropTypes.string,
+    }),
+    onOpenLogin: PropTypes.func,
+    onOpenRegister: PropTypes.func,
+}
 

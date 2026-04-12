@@ -1,66 +1,221 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Backend SkillHub (Laravel API)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend API de SkillHub: authentification JWT, catalogue de formations, modules, et inscriptions apprenants.
 
-## About Laravel
+## Sommaire
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- [Stack technique](#stack-technique)
+- [Structure du backend](#structure-du-backend)
+- [Prerequis](#prerequis)
+- [Installation rapide](#installation-rapide)
+- [Configuration `.env`](#configuration-env)
+- [Lancer le projet](#lancer-le-projet)
+- [Scripts utiles](#scripts-utiles)
+- [Routes API principales](#routes-api-principales)
+- [Auth et roles](#auth-et-roles)
+- [Base de donnees et migrations](#base-de-donnees-et-migrations)
+- [Tests et qualite](#tests-et-qualite)
+- [Documentation API (OpenAPI)](#documentation-api-openapi)
+- [Depannage](#depannage)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Stack technique
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP `^8.3`
+- Laravel `^13`
+- JWT: `php-open-source-saver/jwt-auth`
+- MySQL (donnees applicatives)
+- MongoDB (connexion disponible pour logs/usage annexe)
+- PHPUnit `^12` (tests)
 
-## Learning Laravel
+## Structure du backend
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Repertoires importants:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- `app/Http/Controllers/Api` : endpoints API (`AuthController`, `FormationController`, `ModuleController`, `EnrollmentController`)
+- `app/Http/Middleware/CheckRole.php` : controle des roles (`formateur`, `apprenant`)
+- `routes/api.php` : declaration des routes API
+- `database/migrations` : schema SQL
+- `database/seeders` : donnees de test
+- `docs/openapi.yaml` : spec OpenAPI 3.0
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Prerequis
 
-## Agentic Development
+- PHP 8.3+
+- Composer 2+
+- MySQL 8+ (ou MariaDB compatible)
+- Node.js 18+ (pour assets Vite)
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Installation rapide
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+cd backend
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan jwt:secret
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Puis configurer la base dans `.env` et lancer les migrations:
 
-## Documentation API
+```bash
+php artisan migrate
+php artisan db:seed
+```
 
-La documentation de l'API SkillHub est maintenue en **OpenAPI 3.0** dans :
+## Configuration `.env`
 
-- `docs/openapi.yaml`
+Exemple minimal MySQL:
 
-Tu peux l'ouvrir avec Swagger Editor, Swagger UI ou Redoc.
+```dotenv
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost
 
-## Contributing
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=skillhub
+DB_USERNAME=root
+DB_PASSWORD=
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+AUTH_GUARD=api
+JWT_SECRET=... # genere via php artisan jwt:secret
+```
 
-## Code of Conduct
+Le projet contient aussi une connexion `mongodb` dans `config/database.php` (base par defaut: `skillhub_logs`).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Lancer le projet
 
-## Security Vulnerabilities
+Mode simple:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+php artisan serve
+```
 
-## License
+Mode dev complet (serveur + queue + logs + vite):
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+composer run dev
+```
+
+## Scripts utiles
+
+Scripts declares dans `composer.json`:
+
+- `composer run setup` : installation + `.env` + key + migration + build
+- `composer run dev` : environnement dev complet
+- `composer run test` : clear config + tests Laravel
+
+## Routes API principales
+
+Les routes sont definies dans `routes/api.php`.
+
+Public:
+
+- `POST /api/register`
+- `POST /api/login`
+- `GET /api/formations`
+- `GET /api/formations/{formation}`
+- `GET /api/formations/{formation}/modules`
+
+Protegees JWT:
+
+- `GET /api/profile`
+- `POST /api/logout`
+
+Formateur (`check.role:formateur`):
+
+- `POST /api/formations`
+- `PUT /api/formations/{formation}`
+- `DELETE /api/formations/{formation}`
+- `POST /api/formations/{formation}/modules`
+- `PUT /api/modules/{module}`
+- `DELETE /api/modules/{module}`
+
+Apprenant (`check.role:apprenant`):
+
+- `POST /api/formations/{formation}/inscription`
+- `DELETE /api/formations/{formation}/inscription`
+- `GET /api/apprenant/formations`
+
+## Auth et roles
+
+- Guard API: `auth:api` avec JWT
+- Roles metier:
+  - `formateur`: CRUD formations/modules
+  - `apprenant`: inscription/suivi formations
+- Le middleware `CheckRole` renvoie:
+  - `401` si non authentifie
+  - `403` si role non autorise
+
+## Base de donnees et migrations
+
+Tables principales:
+
+- `users`
+- `formations`
+- `modules`
+- `enrollments`
+
+Commandes utiles:
+
+```bash
+php artisan migrate
+php artisan migrate:rollback
+php artisan migrate:fresh --seed
+```
+
+## Tests et qualite
+
+Lancer les tests:
+
+```bash
+composer run test
+```
+
+Formatage/style (si utilise dans votre workflow):
+
+```bash
+./vendor/bin/pint
+```
+
+## Documentation API (OpenAPI)
+
+La source de verite API est `docs/openapi.yaml`.
+
+Consultez aussi `docs/README.md` pour les details d'usage (Swagger Editor, Swagger UI, Redoc).
+
+## Depannage
+
+### 1) 401 sur routes protegees
+
+- Verifier `Authorization: Bearer <token>`
+- Verifier que `JWT_SECRET` est present dans `.env`
+- Regenerer si besoin:
+
+```bash
+php artisan jwt:secret
+```
+
+### 2) Erreurs CORS en local frontend
+
+- Verifier `config/cors.php`
+- Vider les caches:
+
+```bash
+php artisan optimize:clear
+```
+
+### 3) Migrations qui echouent
+
+- Verifier credentials DB
+- Verifier que la base existe
+- Repartir proprement:
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+---
+
+Si vous reprenez le projet: commencez par **Installation rapide**, puis validez les endpoints via `docs/openapi.yaml`.

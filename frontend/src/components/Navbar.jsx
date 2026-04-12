@@ -1,6 +1,13 @@
-import { Link, NavLink } from 'react-router-dom'
+/* eslint-disable react/prop-types */
 
-function Navbar({ user, onOpenLogin, onOpenRegister, onLogout }) {
+import { Link, NavLink } from 'react-router-dom'
+import PropTypes from 'prop-types'
+
+function Navbar(props) {
+    const user = props?.user || null
+    const onOpenLogin = props?.onOpenLogin || (() => {})
+    const onOpenRegister = props?.onOpenRegister || (() => {})
+    const onLogout = props?.onLogout || (() => {})
     const profilePath = user?.role === 'formateur' ? '/dashboard/formateur' : '/dashboard/apprenant'
 
     return (
@@ -18,8 +25,11 @@ function Navbar({ user, onOpenLogin, onOpenRegister, onLogout }) {
                     {user ? (
                         <>
                             <Link className="btn btn-sm skillhub-btn-secondary" to={profilePath}>
-                                {user.name || 'Mon profil'}
+                                Dashboard
                             </Link>
+                            <span className="small" style={{ color: 'var(--text-secondary)' }}>
+                                {user.name || user.nom || user.email}
+                            </span>
                             <button className="btn btn-sm skillhub-btn-ghost" onClick={onLogout}>
                                 Se deconnecter
                             </button>
@@ -36,4 +46,17 @@ function Navbar({ user, onOpenLogin, onOpenRegister, onLogout }) {
     )
 }
 
+Navbar.propTypes = {
+    user: PropTypes.shape({
+        role: PropTypes.string,
+        name: PropTypes.string,
+        nom: PropTypes.string,
+        email: PropTypes.string,
+    }),
+    onOpenLogin: PropTypes.func.isRequired,
+    onOpenRegister: PropTypes.func.isRequired,
+    onLogout: PropTypes.func.isRequired,
+}
+
 export default Navbar
+

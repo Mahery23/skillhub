@@ -16,7 +16,7 @@ const authHeaders = () => {
 const normalizeFormation = (formation = {}) => ({
   id: formation.id ?? null,
   titre: formation.titre || '',
-  description: formation.description || '',
+  description: formation.description || formation.mini_description || '',
   categorie: formation.categorie || '',
   niveau: formation.niveau || 'Débutant',
   formateur: formation.formateur || null,
@@ -29,9 +29,15 @@ const normalizeFormation = (formation = {}) => ({
 export const getMyFormations = async () => {
   const payload = await apiRequest('/api/formations')
   const currentUser = getStoredUser()
-  const formations = Array.isArray(payload?.data) ? payload.data : []
+  let formations = []
 
-  if (!currentUser) {
+  if (Array.isArray(payload?.data)) {
+    formations = payload.data
+  } else if (Array.isArray(payload)) {
+    formations = payload
+  }
+
+  if (!currentUser?.id) {
     return formations.map(normalizeFormation)
   }
 

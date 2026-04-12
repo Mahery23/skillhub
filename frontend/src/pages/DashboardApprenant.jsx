@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import { Link, Navigate } from 'react-router-dom'
 import { Modal, Button } from 'react-bootstrap'
-import { getStoredUser } from '../services/authService'
 import { getMyFormations, unenrollFromFormation } from '../services/enrollmentService'
+import { mapApiError } from '../services/apiErrorMapper'
 
 const niveauConfig = {
   debutant: { cls: 'sh-badge-green', label: 'Débutant' },
@@ -14,8 +15,7 @@ const normalizeNiveau = (niveau = '') => niveau.toLowerCase().normalize('NFD').r
 
 const formatDescription = (item = {}) => item?.formation?.description || ''
 
-function DashboardApprenant() {
-  const user = getStoredUser()
+function DashboardApprenant({ user }) {
   const [formations, setFormations] = useState([])
   const [showConfirm, setShowConfirm] = useState(false)
   const [enrollmentToRemove, setEnrollmentToRemove] = useState(null)
@@ -42,7 +42,7 @@ function DashboardApprenant() {
         }
       } catch (loadError) {
         if (active) {
-          setError(loadError.message || 'Impossible de charger vos formations.')
+          setError(mapApiError(loadError, 'dashboard-load'))
         }
       } finally {
         if (active) {
@@ -80,7 +80,7 @@ function DashboardApprenant() {
       setShowConfirm(false)
       setEnrollmentToRemove(null)
     } catch (unfollowError) {
-      setActionError(unfollowError.message || 'Impossible de vous désinscrire.')
+      setActionError(mapApiError(unfollowError, 'dashboard-action'))
     } finally {
       setIsSubmitting(false)
     }
@@ -170,11 +170,11 @@ function DashboardApprenant() {
 
                     <div className="d-flex gap-2 mt-2">
                       <Link
-                          to={`/apprendre/${formation.id}`}
-                          className="sh-btn sh-btn--primary flex-fill"
+                          to={`/formation/${formation.id}`}
+                          className="sh-btn sh-btn--outline flex-fill"
                           style={{ fontSize: 12, padding: '7px 10px' }}
                       >
-                        Suivre
+                        Voir le détail
                       </Link>
                       <button
                           className="sh-btn flex-fill"
@@ -278,3 +278,11 @@ function DashboardApprenant() {
 }
 
 export default DashboardApprenant
+
+DashboardApprenant.propTypes = {
+  user: PropTypes.shape({
+    role: PropTypes.string,
+    nom: PropTypes.string,
+    email: PropTypes.string,
+  }),
+}

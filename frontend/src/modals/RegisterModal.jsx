@@ -1,30 +1,43 @@
 import { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import { Modal, Button, Form } from 'react-bootstrap'
+import { mapApiError, mapValidationErrors } from '../services/apiErrorMapper'
 
-function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant', isLoading, setIsLoading }) {
+const getFieldValue = (formData, key) => {
+    const value = formData.get(key)
+    return typeof value === 'string' ? value : ''
+}
+
+function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant' }) {
     const [role, setRole] = useState(defaultRole)
     const [error, setError] = useState('')
+    const [fieldErrors, setFieldErrors] = useState([])
+    const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
         if (show) {
             setRole(defaultRole)
+            setError('')
+            setFieldErrors([])
         }
     }, [defaultRole, show])
 
     const handleSubmit = async (event) => {
         event.preventDefault()
         setError('')
+        setFieldErrors([])
         setIsLoading(true)
 
         const formData = new FormData(event.currentTarget)
-        const name = (formData.get('name') || 'Utilisateur').toString().trim()
-        const email = (formData.get('email') || '').toString().trim().toLowerCase()
-        const password = (formData.get('password') || '').toString()
+        const name = getFieldValue(formData, 'name').trim() || 'Utilisateur'
+        const email = getFieldValue(formData, 'email').trim().toLowerCase()
+        const password = getFieldValue(formData, 'password')
 
         try {
             await onRegister({ name, email, password, role })
         } catch (submitError) {
-            setError(submitError.message || 'Inscription impossible.')
+            setError(mapApiError(submitError, 'register'))
+            setFieldErrors(mapValidationErrors(submitError.details))
         } finally {
             setIsLoading(false)
         }
@@ -38,6 +51,15 @@ function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant', is
             <Modal.Body>
                 <Form onSubmit={handleSubmit}>
                     {error && <div className="alert alert-danger py-2">{error}</div>}
+                    {fieldErrors.length > 0 && (
+                        <div className="alert alert-danger py-2">
+                            <ul className="mb-0 ps-3">
+                                {fieldErrors.map((item) => (
+                                    <li key={item}>{item}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                     <Form.Group className="mb-3">
                         <Form.Label>Nom complet</Form.Label>
                         <Form.Control name="name" type="text" placeholder="Jean Dupont" required />
@@ -64,6 +86,13 @@ function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant', is
             </Modal.Body>
         </Modal>
     )
+}
+
+RegisterModal.propTypes = {
+    show: PropTypes.bool.isRequired,
+    onHide: PropTypes.func.isRequired,
+    onRegister: PropTypes.func.isRequired,
+    defaultRole: PropTypes.oneOf(['apprenant', 'formateur']),
 }
 
 export default RegisterModal

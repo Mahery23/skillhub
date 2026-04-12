@@ -1,154 +1,224 @@
-# Skillhub
+# SkillHub - Plateforme e-learning collaborative
 
-Plateforme e-learning collaborative mettant en relation des formateurs et des apprenants autour de formations en ligne.
+SkillHub met en relation des **formateurs** et des **apprenants** autour de formations en ligne gratuites.
 
----
+Ce README est la vue globale du projet (frontend + backend) pour faciliter l'onboarding de l'equipe.
+
+## Sommaire
+
+- [Vision produit](#vision-produit)
+- [Architecture globale](#architecture-globale)
+- [Stack technique](#stack-technique)
+- [Structure du repository](#structure-du-repository)
+- [Prerequis](#prerequis)
+- [Installation rapide (fullstack)](#installation-rapide-fullstack)
+- [Lancement en local](#lancement-en-local)
+- [Parcours de verification rapide](#parcours-de-verification-rapide)
+- [Routes frontend](#routes-frontend)
+- [API backend (resume)](#api-backend-resume)
+- [Documentation detaillee](#documentation-detaillee)
+- [Workflow equipe](#workflow-equipe)
+- [Qualite et tests](#qualite-et-tests)
+- [Depannage](#depannage)
+
+## Vision produit
+
+- Offrir un catalogue de formations en ligne
+- Permettre aux formateurs de creer et gerer leurs contenus
+- Permettre aux apprenants de s'inscrire, suivre et progresser
+- Assurer la securite via JWT et controle des roles
+
+## Architecture globale
+
+```
+Frontend React (Vite)  <----HTTP/JSON---->  Backend Laravel API  <---->  MySQL
+	   |                                            |
+	   |                                            +---- JWT Auth + controle des roles
+	   |
+	   +---- Navigation, modales auth, dashboards
+```
 
 ## Stack technique
 
-| Côté | Technologie |
+| Cote | Technologie |
 |---|---|
-| Frontend | React.js |
-| Backend | Laravel |
-| Auth | JWT |
-| Base de données | MySQL/MongoDB |
+| Frontend | React 19, Vite, React Router, React Bootstrap |
+| Backend | Laravel 13, PHP 8.3 |
+| Auth | JWT (`php-open-source-saver/jwt-auth`) |
+| DB principale | MySQL |
+| DB annexe | MongoDB (connexion dispo) |
 | Tests | PHPUnit |
 
----
-
-## Structure du projet
+## Structure du repository
 
 ```
-skillhub/
-├── frontend/
-│
-├── backend/
-│
-├── .github/
-│   └── workflows/     # CI/CD
-├── .gitignore
-│
-└── README.md
+skillhub_group/
+├── frontend/          # Application React
+├── backend/           # API Laravel
+├── README.md          # Guide global (ce fichier)
+└── ...
 ```
 
----
+## Prerequis
 
-## Prérequis
+- Node.js 18+
+- npm 9+
+- PHP 8.3+
+- Composer 2+
+- MySQL 8+ (ou MariaDB)
 
-- Node.js >= 18
-- PHP >= 8.2
-- Composer >= 2
-- MySQL
-- MongoDB
+## Installation rapide (fullstack)
 
----
-
-## Installation
-
-### 1. Cloner le projet
-
-```bash
-git clone https://github.com/Mahery23/skillhub.git
-cd skillhub
-```
-
-### 2. Backend (Laravel)
+### 1) Backend
 
 ```bash
 cd backend
 composer install
+cp .env.example .env
+php artisan key:generate
+php artisan jwt:secret
+php artisan migrate
+php artisan db:seed
 ```
 
-### 3. Frontend (React)
+### 2) Frontend
 
 ```bash
-cd frontend
+cd ../frontend
 npm install
 ```
 
-Démarrer l'application :
+Configurer `frontend/.env`:
 
-```bash
-npm run dev
-php artisan serve
+```dotenv
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
----
+## Lancement en local
 
-## Routes frontend
-
-| Route | Page |
-|---|---|
-| `/` | Page d'accueil |
-| `/formations` | Liste des formations |
-| `/formation/:id` | Détail d'une formation |
-| `/dashboard/apprenant` | Tableau de bord apprenant |
-| `/dashboard/formateur` | Tableau de bord formateur |
-| `/apprendre/:id` | Suivi de formation |
-
----
-
-## Endpoints API principaux
-
-### Authentification
-
-| Méthode | Endpoint | Description |
-|---|---|---|
-| POST | `/api/register` | Créer un compte |
-| POST | `/api/login` | Connexion + token JWT |
-| GET | `/api/profile` | Profil connecté 🔒 |
-
-### Formations
-
-| Méthode | Endpoint | Description |
-|---|---|---|
-| GET | `/api/formations` | Liste des formations |
-| GET | `/api/formations/{id}` | Détail d'une formation |
-| POST | `/api/formations` | Créer une formation 🔒 Formateur |
-| PUT | `/api/formations/{id}` | Modifier une formation 🔒 Formateur |
-| DELETE | `/api/formations/{id}` | Supprimer une formation 🔒 Formateur |
-
-### Modules
-
-| Méthode | Endpoint | Description |
-|---|---|---|
-| GET | `/api/formations/{id}/modules` | Modules d'une formation |
-| POST | `/api/formations/{id}/modules` | Ajouter un module 🔒 Formateur |
-| PUT | `/api/modules/{id}` | Modifier un module 🔒 Formateur |
-| DELETE | `/api/modules/{id}` | Supprimer un module 🔒 Formateur |
-
-### Inscriptions
-
-| Méthode | Endpoint | Description |
-|---|---|---|
-| POST | `/api/formations/{id}/inscription` | S'inscrire 🔒 Apprenant |
-| DELETE | `/api/formations/{id}/inscription` | Se désinscrire 🔒 Apprenant |
-| GET | `/api/apprenant/formations` | Formations suivies 🔒 Apprenant |
-
-🔒 = route protégée par JWT
-
----
-
-## Tests
+### Terminal 1 - Backend
 
 ```bash
 cd backend
-php artisan test
+php artisan serve
 ```
 
-Les tests couvrent :
-- Authentification (inscription, connexion)
-- Gestion des formations (création, modification)
-- Sécurité des routes protégées
-- Contrôle des rôles (apprenant / formateur)
+### Terminal 2 - Frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+## Parcours de verification rapide
+
+1. Ouvrir le frontend (`http://localhost:5173`)
+2. Creer un compte apprenant puis formateur
+3. En tant que formateur: creer/modifier/supprimer une formation
+4. En tant qu'apprenant: consulter detail, s'inscrire, verifier dashboard
+5. Verifier les requetes API dans DevTools > Network
+
+## Routes frontend
+
+| Route | Ecran |
+|---|---|
+| `/` | Accueil |
+| `/formations` | Catalogue |
+| `/formation/:id` | Detail formation |
+| `/dashboard/formateur` | Dashboard formateur |
+| `/dashboard/apprenant` | Dashboard apprenant |
+| `/apprendre/:id` | Lecture des modules |
+
+## API backend (resume)
+
+Authentification:
+
+- `POST /api/register`
+- `POST /api/login`
+- `GET /api/profile` (JWT)
+
+Formations:
+
+- `GET /api/formations`
+- `GET /api/formations/{id}`
+- `POST /api/formations` (formateur)
+- `PUT /api/formations/{id}` (formateur)
+- `DELETE /api/formations/{id}` (formateur)
+
+Inscriptions apprenant:
+
+- `POST /api/formations/{id}/inscription`
+- `DELETE /api/formations/{id}/inscription`
+- `GET /api/apprenant/formations`
+
+## Documentation detaillee
+
+- Backend detaille: `backend/README.md`
+- Frontend detaille: `frontend/README.md`
+- Spec API OpenAPI: `backend/docs/openapi.yaml`
+
+## Workflow equipe
+
+Branches recommandees:
+
+- `main` : stable/production
+- `develop` : integration continue
+- `feature/*` : nouvelles fonctionnalites
+- `fix/*` : corrections
+
+Bonnes pratiques PR:
+
+- PR petite et ciblee
+- Description claire (contexte, changements, tests)
+- Captures ecran si impact UI
+- Verification locale avant push
+
+## Qualite et tests
+
+Backend:
+
+```bash
+cd backend
+composer run test
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run build
+```
+
+## Depannage
+
+### 1) CORS / Failed to fetch
+
+- Verifier `VITE_API_BASE_URL`
+- Verifier que backend tourne bien sur le port attendu
+- Vider cache Laravel:
+
+```bash
+cd backend
+php artisan optimize:clear
+```
+
+### 2) 401 Unauthorized
+
+- Se reconnecter (token expire)
+- Verifier role selon route protegee
+- Verifier que `JWT_SECRET` existe dans `backend/.env`
+
+### 3) Migrations en erreur
+
+- Verifier credentials MySQL
+- Verifier existence de la base
+- Repartir proprement:
+
+```bash
+cd backend
+php artisan migrate:fresh --seed
+```
 
 ---
 
-## Branches Git
-
-| Branche | Usage |
-|---|---|
-| `main` | Code stable, prêt pour la production |
-| `develop` | Branche de développement principale |
-| `features/*` | Nouvelles fonctionnalités |
-| `fix/*` | Corrections de bugs |
+Si vous arrivez sur le projet, commencez par ce README, puis enchainez avec `backend/README.md` ou `frontend/README.md` selon votre scope.

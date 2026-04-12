@@ -3,9 +3,10 @@ import PropTypes from 'prop-types'
 import { Link, Navigate } from 'react-router-dom'
 import { Modal, Button, Form } from 'react-bootstrap'
 import { createFormation, deleteFormation, getMyFormations, updateFormation } from '../services/trainerService'
+import { mapApiError } from '../services/apiErrorMapper'
 
 const NIVEAUX = ['Débutant', 'Intermédiaire', 'Avancé']
-const CATEGORIES = ['Développement web', 'Backend', 'DevOps', 'Design', 'Data', 'Marketing']
+const CATEGORIES = ['Développement web', 'DevOps', 'Design', 'Data', 'Marketing']
 
 const niveauConfig = {
   debutant: { cls: 'sh-badge-green', label: 'Débutant' },
@@ -16,13 +17,14 @@ const niveauConfig = {
 const FORM_VIDE = { titre: '', niveau: 'Débutant', categorie: 'Développement web', description: '' }
 
 const normalizeNiveau = (niveau = '') => niveau.toLowerCase().normalize('NFD').replaceAll(/\p{Diacritic}/gu, '')
+const sanitizeCategorie = (categorie = '') => (CATEGORIES.includes(categorie) ? categorie : CATEGORIES[0])
 
 const normalizeFormation = (formation = {}) => ({
   id: formation.id ?? null,
   titre: formation.titre || '',
   niveau: formation.niveau || 'Débutant',
   categorie: formation.categorie || '',
-  description: formation.description || '',
+  description: formation.description || formation.mini_description || '',
   apprenants: formation.apprenants ?? formation.inscriptions_count ?? 0,
   vues: formation.vues ?? formation.nombre_de_vues ?? 0,
 })
@@ -58,7 +60,7 @@ function DashboardFormateur({ user }) {
         }
       } catch (loadError) {
         if (active) {
-          setError(loadError.message || 'Impossible de charger vos formations.')
+          setError(mapApiError(loadError, 'dashboard-load'))
         }
       } finally {
         if (active) {
@@ -94,7 +96,7 @@ function DashboardFormateur({ user }) {
     setFormData({
       titre: formation.titre,
       niveau: formation.niveau,
-      categorie: formation.categorie,
+      categorie: sanitizeCategorie(formation.categorie),
       description: formation.description,
     })
     setActionError('')
@@ -111,9 +113,15 @@ function DashboardFormateur({ user }) {
       setActionError('')
 
       if (formationEnCours) {
-        await updateFormation(formationEnCours.id, formData)
+        await updateFormation(formationEnCours.id, {
+          ...formData,
+          categorie: sanitizeCategorie(formData.categorie),
+        })
       } else {
-        await createFormation(formData)
+        await createFormation({
+          ...formData,
+          categorie: sanitizeCategorie(formData.categorie),
+        })
       }
 
       await refreshFormations()
@@ -121,7 +129,7 @@ function DashboardFormateur({ user }) {
       setFormationEnCours(null)
       setFormData(FORM_VIDE)
     } catch (saveError) {
-      setActionError(saveError.message || 'Impossible d’enregistrer la formation.')
+      setActionError(mapApiError(saveError, 'dashboard-action'))
     } finally {
       setIsSaving(false)
     }
@@ -146,7 +154,7 @@ function DashboardFormateur({ user }) {
       setShowConfirmDelete(false)
       setFormationASupprimer(null)
     } catch (deleteError) {
-      setActionError(deleteError.message || 'Impossible de supprimer la formation.')
+      setActionError(mapApiError(deleteError, 'dashboard-action'))
     } finally {
       setIsSaving(false)
     }
@@ -292,6 +300,7 @@ function DashboardFormateur({ user }) {
           <Modal.Title>{formationEnCours ? 'Modifier la formation' : 'Créer une formation'}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {actionError && <div className="alert alert-danger py-2">{actionError}</div>}
           <Form>
             <Form.Group className="mb-3">
               <label htmlFor="formation-titre" className="form-label">Titre</label>

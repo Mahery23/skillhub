@@ -1,23 +1,40 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import { Modal, Button, Form } from 'react-bootstrap'
+import { mapApiError, mapValidationErrors } from '../services/apiErrorMapper'
 
-function LoginModal({ show, onHide, onLogin, isLoading, setIsLoading }) {
+const getFieldValue = (formData, key) => {
+    const value = formData.get(key)
+    return typeof value === 'string' ? value : ''
+}
+
+function LoginModal({ show, onHide, onLogin }) {
     const [error, setError] = useState('')
+    const [fieldErrors, setFieldErrors] = useState([])
+    const [isLoading, setIsLoading] = useState(false)
+
+    useEffect(() => {
+        if (show) {
+            setError('')
+            setFieldErrors([])
+        }
+    }, [show])
 
     const handleSubmit = async (event) => {
         event.preventDefault()
         setError('')
+        setFieldErrors([])
         setIsLoading(true)
 
         const formData = new FormData(event.currentTarget)
-        const email = (formData.get('email') || '').toString().trim().toLowerCase()
-        const password = (formData.get('password') || '').toString()
-        const role = (formData.get('role') || 'apprenant').toString()
+        const email = getFieldValue(formData, 'email').trim().toLowerCase()
+        const password = getFieldValue(formData, 'password')
 
         try {
-            await onLogin({ email, password, role })
+            await onLogin({ email, password })
         } catch (submitError) {
-            setError(submitError.message || 'Connexion impossible.')
+            setError(mapApiError(submitError, 'login'))
+            setFieldErrors(mapValidationErrors(submitError.details))
         } finally {
             setIsLoading(false)
         }
@@ -31,6 +48,15 @@ function LoginModal({ show, onHide, onLogin, isLoading, setIsLoading }) {
             <Modal.Body>
                 <Form onSubmit={handleSubmit}>
                     {error && <div className="alert alert-danger py-2">{error}</div>}
+                    {fieldErrors.length > 0 && (
+                        <div className="alert alert-danger py-2">
+                            <ul className="mb-0 ps-3">
+                                {fieldErrors.map((item) => (
+                                    <li key={item}>{item}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                     <Form.Group className="mb-3">
                         <Form.Label>Email</Form.Label>
                         <Form.Control name="email" type="email" placeholder="votre@email.com" required />
@@ -38,13 +64,6 @@ function LoginModal({ show, onHide, onLogin, isLoading, setIsLoading }) {
                     <Form.Group className="mb-3">
                         <Form.Label>Mot de passe</Form.Label>
                         <Form.Control name="password" type="password" placeholder="********" required />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Rôle</Form.Label>
-                        <Form.Select name="role" defaultValue="apprenant">
-                            <option value="apprenant">Apprenant</option>
-                            <option value="formateur">Formateur</option>
-                        </Form.Select>
                     </Form.Group>
                     <Button variant="primary" className="w-100" type="submit" disabled={isLoading}>
                         {isLoading ? 'Connexion...' : 'Se connecter'}
@@ -56,3 +75,9 @@ function LoginModal({ show, onHide, onLogin, isLoading, setIsLoading }) {
 }
 
 export default LoginModal
+
+LoginModal.propTypes = {
+    show: PropTypes.bool.isRequired,
+    onHide: PropTypes.func.isRequired,
+    onLogin: PropTypes.func.isRequired,
+}

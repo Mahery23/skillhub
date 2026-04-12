@@ -25,7 +25,11 @@ export const getMyFormations = async () => {
     headers: authHeaders(),
   })
 
-  return Array.isArray(payload?.formations) ? payload.formations.map(mapEnrollmentItem) : []
+  const items = Array.isArray(payload?.formations)
+    ? payload.formations
+    : (Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []))
+
+  return items.map(mapEnrollmentItem)
 }
 
 export const enrollInFormation = async (formationId) => {

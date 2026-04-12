@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { getFormation, getFormationModules } from '../services/formationService'
 import { getStoredUser } from '../services/authService'
+import { enrollInFormation, getMyFormations } from '../services/enrollmentService'
 
 const niveauConfig = {
   debutant: { cls: 'sh-badge-green' },
@@ -12,12 +13,19 @@ const niveauConfig = {
 
 function FormationDetail() {
   const user = getStoredUser()
+  const userId = user?.id || null
+  const userRole = user?.role || ''
+  const canFollowFormation = !user || user.role === 'apprenant'
   const { id } = useParams()
   const navigate = useNavigate()
   const [formation, setFormation] = useState(null)
   const [modules, setModules] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isAlreadyEnrolled, setIsAlreadyEnrolled] = useState(false)
+  const [checkingEnrollment, setCheckingEnrollment] = useState(false)
+  const [followLoading, setFollowLoading] = useState(false)
+  const [followError, setFollowError] = useState('')
 
   const niveauKey = (formation?.niveau || '').toLowerCase().normalize('NFD').replaceAll(/\p{Diacritic}/gu, '')
 
@@ -56,6 +64,41 @@ function FormationDetail() {
     }
   }, [id])
 
+  useEffect(() => {
+    if (userRole !== 'apprenant') {
+      setIsAlreadyEnrolled(false)
+      return
+    }
+
+    let active = true
+
+    const checkEnrollment = async () => {
+      try {
+        setCheckingEnrollment(true)
+        const enrollments = await getMyFormations()
+        const alreadyEnrolled = enrollments.some((item) => String(item?.formation?.id) === String(id))
+
+        if (active) {
+          setIsAlreadyEnrolled(alreadyEnrolled)
+        }
+      } catch {
+        if (active) {
+          setIsAlreadyEnrolled(false)
+        }
+      } finally {
+        if (active) {
+          setCheckingEnrollment(false)
+        }
+      }
+    }
+
+    checkEnrollment()
+
+    return () => {
+      active = false
+    }
+  }, [id, userId, userRole])
+
   if (loading) {
     return (
         <div className="container py-5 text-center">
@@ -77,8 +120,31 @@ function FormationDetail() {
   }
 
   const handleSuivre = () => {
+    if (user?.role === 'formateur') {
+      return
+    }
+
     if (user) {
-      navigate(`/apprendre/${formation.id}`)
+      const follow = async () => {
+        try {
+          setFollowError('')
+          setFollowLoading(true)
+          await enrollInFormation(formation.id)
+          setIsAlreadyEnrolled(true)
+          navigate(`/apprendre/${formation.id}`)
+        } catch (followRequestError) {
+          if (followRequestError?.status === 409) {
+            setIsAlreadyEnrolled(true)
+            return
+          }
+
+          setFollowError(followRequestError?.message || 'Impossible de suivre cette formation pour le moment.')
+        } finally {
+          setFollowLoading(false)
+        }
+      }
+
+      follow()
       return
     }
 
@@ -194,14 +260,48 @@ function FormationDetail() {
                     </div>
                   </div>
 
-                  <button className="sh-btn sh-btn--primary w-100" onClick={handleSuivre}>
-                    {user ? 'Suivre la formation' : 'Se connecter pour suivre'}
-                  </button>
+                  {canFollowFormation && (
+                    <>
+                      {user?.role === 'apprenant' && checkingEnrollment && (
+                        <p className="text-center mt-2 mb-0" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                          Vérification de votre inscription...
+                        </p>
+                      )}
 
-                  {!user && (
-                      <p className="text-center mt-2" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        Vous devez être connecté pour accéder à la formation
-                      </p>
+                      {user?.role === 'apprenant' && !checkingEnrollment && isAlreadyEnrolled && (
+                        <div
+                          className="text-center w-100"
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: 'var(--green-text)',
+                            background: 'var(--green-bg)',
+                            borderRadius: '999px',
+                            padding: '10px 14px',
+                          }}
+                        >
+                          Déjà suivie
+                        </div>
+                      )}
+
+                      {(!user || (user?.role === 'apprenant' && !checkingEnrollment && !isAlreadyEnrolled)) && (
+                        <button className="sh-btn sh-btn--primary w-100" onClick={handleSuivre} disabled={followLoading}>
+                          {followLoading ? 'Inscription...' : user ? 'Suivre la formation' : 'Se connecter pour suivre'}
+                        </button>
+                      )}
+
+                      {followError && (
+                        <p className="text-center mt-2 mb-0" style={{ fontSize: 11, color: 'var(--red-text)' }}>
+                          {followError}
+                        </p>
+                      )}
+
+                      {!user && (
+                        <p className="text-center mt-2" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                          Vous devez être connecté pour accéder à la formation
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
