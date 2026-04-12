@@ -1,12 +1,14 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\EnrollmentController;
 use App\Http\Controllers\Api\FormationController;
 use App\Http\Controllers\Api\ModuleController;
 use Illuminate\Support\Facades\Route;
 
 const FORMATION_ROUTE = '/formations/{formation}';
 const FORMATION_MODULES_ROUTE = '/formations/{formation}/modules';
+const FORMATION_ENROLLMENT_ROUTE = '/formations/{formation}/inscription';
 const MODULE_ROUTE = '/modules/{module}';
 
 // Endpoints publics d'authentification.
@@ -30,4 +32,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post(FORMATION_MODULES_ROUTE, [ModuleController::class, 'store']);
     Route::put(MODULE_ROUTE, [ModuleController::class, 'update']);
     Route::delete(MODULE_ROUTE, [ModuleController::class, 'destroy']);
+
+    Route::post(FORMATION_ENROLLMENT_ROUTE, [EnrollmentController::class, 'store']);
+    Route::delete(FORMATION_ENROLLMENT_ROUTE, [EnrollmentController::class, 'destroy']);
+    Route::get('/apprenant/formations', [EnrollmentController::class, 'mesFormations']);
 });
