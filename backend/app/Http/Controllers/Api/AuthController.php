@@ -1,0 +1,131 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+
+/**
+ * Gère l'authentification API SkillHub en JWT.
+ *
+ * Ce contrôleur centralise l'inscription, la connexion,
+ * la récupération du profil connecté et la déconnexion.
+ */
+class AuthController extends Controller
+{
+    /**
+     * Crée un utilisateur SkillHub puis retourne un token JWT.
+     *
+     * @param  Request  $request  Données d'inscription attendues: name, email, password, role.
+     */
+    public function register(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8'],
+            'role' => ['required', 'in:apprenant,formateur'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = User::create([
+            'nom' => $request->string('name')->toString(),
+            'email' => $request->string('email')->toString(),
+            'mot_de_passe' => $request->string('password')->toString(),
+            'role' => $request->string('role')->toString(),
+        ]);
+
+        $token = JWTAuth::fromUser($user);
+
+        return response()->json([
+            'message' => 'User registered successfully',
+            'token' => $token,
+            'user' => $this->formatUser($user),
+        ], 201);
+    }
+
+    /**
+     * Authentifie un utilisateur et retourne son token JWT.
+     *
+     * @param  Request  $request  Identifiants attendus: email et password.
+     */
+    public function login(Request $request): JsonResponse
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        if (! $token = auth('api')->attempt($credentials)) {
+            return response()->json([
+                'message' => 'Invalid credentials',
+            ], 401);
+        }
+
+        /** @var User $user */
+        $user = auth('api')->user();
+
+        return response()->json([
+            'message' => 'Login successful',
+            'token' => $token,
+            'user' => $this->formatUser($user),
+        ]);
+    }
+
+    /**
+     * Retourne le profil de l'utilisateur authentifié via JWT.
+     */
+    public function profile(): JsonResponse
+    {
+        $user = auth('api')->user();
+
+        return response()->json([
+            'user' => $this->formatUser($user),
+        ]);
+    }
+
+    /**
+     * Invalide le token JWT courant.
+     */
+    public function logout(): JsonResponse
+    {
+        auth('api')->logout();
+
+        return response()->json([
+            'message' => 'Logout successful',
+        ]);
+    }
+
+    /**
+     * Normalise le modèle User vers le format JSON attendu par le frontend.
+     *
+     * @param  User|null  $user  Utilisateur à convertir.
+     * @return array<string, mixed>
+     */
+    private function formatUser(?User $user): array
+    {
+        if (! $user) {
+            return [];
+        }
+
+        return [
+            'id' => $user->id,
+            'name' => $user->nom,
+            'nom' => $user->nom,
+            'email' => $user->email,
+            'role' => $user->role,
+            'date_creation' => $user->date_creation,
+        ];
+    }
+}
+
