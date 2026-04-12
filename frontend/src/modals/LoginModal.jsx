@@ -1,5 +1,5 @@
-import { Modal, Button, Form } from 'react-bootstrap'
 import { useState } from 'react'
+import { Modal, Button, Form } from 'react-bootstrap'
 
 function LoginModal({ show, onHide, onLogin, isLoading, setIsLoading }) {
     const [error, setError] = useState('')
