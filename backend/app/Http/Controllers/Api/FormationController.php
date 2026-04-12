@@ -34,7 +34,7 @@ class FormationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Formation::query()->with('formateur:id,nom');
+        $query = Formation::query()->with('formateur:id,nom')->withCount('inscriptions');
 
         $search = trim((string) $request->input('search', ''));
         $categorie = trim((string) $request->input('categorie', ''));
@@ -68,7 +68,7 @@ class FormationController extends Controller
     public function show(Formation $formation): JsonResponse
     {
         $formation->increment('nombre_de_vues');
-        $formation->refresh()->load(['formateur:id,nom', 'modules:id,formation_id,titre,contenu,ordre,date_creation']);
+        $formation->refresh()->load(['formateur:id,nom', 'modules:id,formation_id,titre,contenu,ordre,date_creation'])->loadCount('inscriptions');
 
         return response()->json([
             'formation' => $this->formatFormation($formation, true),
@@ -164,7 +164,7 @@ class FormationController extends Controller
             'niveau' => $formation->niveau,
             'categorie' => $formation->categorie,
             'vues' => $formation->nombre_de_vues,
-            'apprenants' => 0,
+            'apprenants' => (int) ($formation->inscriptions_count ?? 0),
             'formateur' => [
                 'id' => $formation->formateur_id,
                 'nom' => $formation->formateur?->nom,

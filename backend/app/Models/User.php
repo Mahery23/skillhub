@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -69,5 +70,24 @@ class User extends Authenticatable implements JWTSubject
     public function formations(): HasMany
     {
         return $this->hasMany(Formation::class, 'formateur_id');
+    }
+
+    /**
+     * Retourne les inscriptions de l'apprenant.
+     *
+     * @return HasMany<Enrollment, $this>
+     */
+    public function inscriptions(): HasMany
+    {
+        return $this->hasMany(Enrollment::class, 'utilisateur_id');
+    }
+
+    /**
+     * Retourne les formations suivies par l'apprenant.
+     */
+    public function formationsSuivies(): BelongsToMany
+    {
+        return $this->belongsToMany(Formation::class, 'enrollments', 'utilisateur_id', 'formation_id')
+            ->withPivot(['progression', 'date_inscription']);
     }
 }
