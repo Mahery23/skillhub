@@ -1,44 +1,74 @@
 # SkillHub - Plateforme e-learning collaborative
 
-SkillHub met en relation des **formateurs** et des **apprenants** autour de formations en ligne gratuites.
+SkillHub met en relation des **formateurs** et des **apprenants** autour de formations en ligne.
 
-Ce README est la vue globale du projet (frontend + backend) pour faciliter l'onboarding de l'equipe.
+Ce document est un guide d'onboarding detaille pour les coequipiers du projet (frontend, backend, devops).
 
 ## Sommaire
 
-- [Vision produit](#vision-produit)
-- [Architecture globale](#architecture-globale)
-- [Stack technique](#stack-technique)
-- [Structure du repository](#structure-du-repository)
-- [Prerequis](#prerequis)
-- [Installation rapide (fullstack)](#installation-rapide-fullstack)
-- [Lancement en local](#lancement-en-local)
-- [Parcours de verification rapide](#parcours-de-verification-rapide)
-- [Routes frontend](#routes-frontend)
-- [API backend (resume)](#api-backend-resume)
-- [Documentation detaillee](#documentation-detaillee)
-- [Workflow equipe](#workflow-equipe)
-- [Qualite et tests](#qualite-et-tests)
-- [Depannage](#depannage)
+- [1. Contexte et objectifs](#1-contexte-et-objectifs)
+- [2. Vision produit](#2-vision-produit)
+- [3. Architecture globale](#3-architecture-globale)
+- [4. Stack technique](#4-stack-technique)
+- [5. Structure du repository](#5-structure-du-repository)
+- [6. Roles et responsabilites](#6-roles-et-responsabilites)
+- [7. Prerequis local](#7-prerequis-local)
+- [8. Installation complete (pas a pas)](#8-installation-complete-pas-a-pas)
+- [9. Lancement en local](#9-lancement-en-local)
+- [10. Verification fonctionnelle rapide](#10-verification-fonctionnelle-rapide)
+- [11. Workflow equipe (Git)](#11-workflow-equipe-git)
+- [12. Qualite, tests et definition of done](#12-qualite-tests-et-definition-of-done)
+- [13. Livrables Bloc 03 (rappel)](#13-livrables-bloc-03-rappel)
+- [14. Depannage avance](#14-depannage-avance)
+- [15. Documentation detaillee](#15-documentation-detaillee)
 
-## Vision produit
+## 1. Contexte et objectifs
 
-- Offrir un catalogue de formations en ligne
-- Permettre aux formateurs de creer et gerer leurs contenus
-- Permettre aux apprenants de s'inscrire, suivre et progresser
-- Assurer la securite via JWT et controle des roles
+Le projet SkillHub est construit en plusieurs phases. La phase actuelle vise:
 
-## Architecture globale
+- une application fonctionnelle frontend + backend,
+- une securisation de l'authentification via JWT,
+- une industrialisation progressive (Docker, CI/CD, architecture cloud),
+- une documentation claire pour un travail equipe efficace.
 
-```
+Ce README sert de base commune pour reduire les blocages onboarding et harmoniser les pratiques.
+
+## 2. Vision produit
+
+SkillHub doit permettre:
+
+- aux formateurs de publier et gerer leurs contenus,
+- aux apprenants de decouvrir, suivre et progresser,
+- a l'equipe technique de maintenir la plateforme de facon fiable et evolutive.
+
+Fonctions coeur:
+
+- catalogue de formations,
+- details d'une formation + modules,
+- inscription/desinscription apprenant,
+- dashboard formateur,
+- dashboard apprenant,
+- journalisation d'activites (MongoDB) pour audit technique.
+
+## 3. Architecture globale
+
+```text
 Frontend React (Vite)  <----HTTP/JSON---->  Backend Laravel API  <---->  MySQL
-	   |                                            |
-	   |                                            +---- JWT Auth + controle des roles
-	   |
-	   +---- Navigation, modales auth, dashboards
+       |                                            |
+       |                                            +---- JWT Auth + controle des roles
+       |
+       +--------------------------------------------+---- MongoDB (activity logs)
 ```
 
-## Stack technique
+### Flux principal
+
+1. L'utilisateur interagit avec le frontend React.
+2. Le frontend appelle l'API Laravel (`/api/*`).
+3. Laravel verifie JWT + role (`formateur` ou `apprenant`).
+4. Les donnees metier sont lues/ecrites dans MySQL.
+5. Les evenements metier importants sont logges dans MongoDB (`activity_logs`).
+
+## 4. Stack technique
 
 | Cote | Technologie |
 |---|---|
@@ -46,30 +76,89 @@ Frontend React (Vite)  <----HTTP/JSON---->  Backend Laravel API  <---->  MySQL
 | Backend | Laravel 13, PHP 8.3 |
 | Auth | JWT (`php-open-source-saver/jwt-auth`) |
 | DB principale | MySQL |
-| DB annexe | MongoDB (connexion dispo) |
-| Tests | PHPUnit |
+| DB logs | MongoDB |
+| Tests backend | PHPUnit |
 
-## Structure du repository
+## 5. Structure du repository
 
-```
+```text
 skillhub_group/
-├── frontend/          # Application React
-├── backend/           # API Laravel
-├── README.md          # Guide global (ce fichier)
-└── ...
+├── frontend/                  # Application React
+│   ├── src/components/        # UI partages
+│   ├── src/pages/             # Pages principales
+│   ├── src/services/          # Client API + services metier
+│   └── README.md              # Guide frontend detaille
+├── backend/                   # API Laravel
+│   ├── app/Http/Controllers/Api/
+│   ├── app/Services/
+│   ├── routes/api.php
+│   ├── docs/openapi.yaml
+│   └── README.md              # Guide backend detaille
+└── README.md                  # Guide global (ce fichier)
 ```
 
-## Prerequis
+## 6. Roles et responsabilites
+
+Cette section distingue:
+
+- les roles applicatifs (dans le produit),
+- les roles equipe Bloc 03 (dans l'organisation projet).
+
+### 6.1 Roles applicatifs
+
+| Role | Ce que le role peut faire | Pages / endpoints cle |
+|---|---|---|
+| `formateur` | Creer, modifier, supprimer ses formations; gerer modules; suivre son dashboard | `/dashboard/formateur`, `POST/PUT/DELETE /api/formations/*`, `POST/PUT/DELETE /api/modules/*` |
+| `apprenant` | Parcourir catalogue, s'inscrire/desinscrire, suivre sa progression | `/formations`, `/dashboard/apprenant`, `POST/DELETE /api/formations/{id}/inscription`, `GET /api/apprenant/formations` |
+
+### 6.2 Roles equipe Bloc 03
+
+| Role | Mission principale | Livrables pilotes |
+|---|---|---|
+| Cloud Architect | Definir l'architecture cloud cible, comparer les options, produire la recommandation | Rapport d'audit, C4 (C1/C2), budget N1/N2 |
+| DevOps Engineer | Industrialiser l'execution et le deploiement | Dockerfiles, `docker-compose.yml`, pipeline CI/CD |
+| Tech Lead | Coherence technique, qualite de livraison, gouvernance Git | `CONTRIBUTING.md`, strategy branches/PR, controle qualite |
+
+### 6.3 Regles de collaboration attendues
+
+- Branches: `main`, `develop`, `feature/*`, `fix/*`.
+- Pas de commit direct sur `main`.
+- PR obligatoires avec description claire + verification locale.
+- Conventional Commits (`feat:`, `fix:`, `docs:`, `ci:`, `docker:`, `chore:`).
+- Historique Git doit montrer une contribution reguliere des 3 membres.
+
+## 7. Prerequis local
+
+### Outils obligatoires
 
 - Node.js 18+
 - npm 9+
 - PHP 8.3+
 - Composer 2+
 - MySQL 8+ (ou MariaDB)
+- MongoDB Community Server
 
-## Installation rapide (fullstack)
+### Outils recommandes
 
-### 1) Backend
+- MongoDB Compass (visualisation)
+- mongosh (diagnostic)
+- GitHub Desktop ou CLI Git
+
+### Notes importantes
+
+- Verifier que MySQL et MongoDB tournent avant de lancer l'API.
+- Sur Windows, lancer `mongod` en service est le plus stable.
+
+## 8. Installation complete (pas a pas)
+
+## 8.1 Cloner et se placer a la racine
+
+```bash
+git clone <url-du-repo>
+cd skillhub_group
+```
+
+### 8.2 Backend
 
 ```bash
 cd backend
@@ -77,11 +166,40 @@ composer install
 cp .env.example .env
 php artisan key:generate
 php artisan jwt:secret
-php artisan migrate
-php artisan db:seed
 ```
 
-### 2) Frontend
+Configurer `backend/.env`:
+
+```dotenv
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=skillhub
+DB_USERNAME=root
+DB_PASSWORD=
+
+MONGODB_URI=mongodb://127.0.0.1:27017
+MONGODB_HOST=127.0.0.1
+MONGODB_PORT=27017
+MONGODB_DATABASE=skillhub_logs
+MONGODB_USERNAME=
+MONGODB_PASSWORD=
+MONGODB_AUTH_DATABASE=admin
+
+AUTH_GUARD=api
+```
+
+Puis migrer:
+
+```bash
+php artisan migrate
+```
+
+### 8.3 Frontend
 
 ```bash
 cd ../frontend
@@ -94,13 +212,14 @@ Configurer `frontend/.env`:
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
-## Lancement en local
+## 9. Lancement en local
 
 ### Terminal 1 - Backend
 
 ```bash
 cd backend
-php artisan serve
+php artisan optimize:clear
+php artisan serve --host=127.0.0.1 --port=8000
 ```
 
 ### Terminal 2 - Frontend
@@ -110,76 +229,58 @@ cd frontend
 npm run dev
 ```
 
-## Parcours de verification rapide
+URLs:
 
-1. Ouvrir le frontend (`http://localhost:5173`)
-2. Creer un compte apprenant puis formateur
-3. En tant que formateur: creer/modifier/supprimer une formation
-4. En tant qu'apprenant: consulter detail, s'inscrire, verifier dashboard
-5. Verifier les requetes API dans DevTools > Network
+- Frontend: `http://localhost:5173`
+- Backend API: `http://127.0.0.1:8000`
 
-## Routes frontend
+## 10. Verification fonctionnelle rapide
 
-| Route | Ecran |
-|---|---|
-| `/` | Accueil |
-| `/formations` | Catalogue |
-| `/formation/:id` | Detail formation |
-| `/dashboard/formateur` | Dashboard formateur |
-| `/dashboard/apprenant` | Dashboard apprenant |
-| `/apprendre/:id` | Lecture des modules |
+Checklist de smoke test:
 
-## API backend (resume)
+1. Ouvrir `http://localhost:5173`.
+2. Creer un compte `formateur`.
+3. Creer une formation depuis le dashboard formateur.
+4. Se deconnecter, creer un compte `apprenant`.
+5. S'inscrire a la formation.
+6. Verifier le dashboard apprenant.
+7. Verifier que `GET /api/formations` repond 200.
 
-Authentification:
+Option verification logs MongoDB:
 
-- `POST /api/register`
-- `POST /api/login`
-- `GET /api/profile` (JWT)
+```bash
+mongosh "mongodb://127.0.0.1:27017/skillhub_logs" --eval "db.activity_logs.countDocuments()"
+```
 
-Formations:
+## 11. Workflow equipe (Git)
 
-- `GET /api/formations`
-- `GET /api/formations/{id}`
-- `POST /api/formations` (formateur)
-- `PUT /api/formations/{id}` (formateur)
-- `DELETE /api/formations/{id}` (formateur)
+Workflow recommande:
 
-Inscriptions apprenant:
+1. Partir de `develop` a jour.
+2. Creer une branche `feature/nom-court`.
+3. Commits petits et atomiques.
+4. Push + Pull Request vers `develop`.
+5. Review + corrections.
+6. Merge quand la PR est validee.
 
-- `POST /api/formations/{id}/inscription`
-- `DELETE /api/formations/{id}/inscription`
-- `GET /api/apprenant/formations`
+Template message de commit:
 
-## Documentation detaillee
+```text
+feat(frontend): ajouter filtre categorie dans le catalogue
+fix(api): corriger verification du role formateur
+docs(readme): clarifier setup mongodb windows
+```
 
-- Backend detaille: `backend/README.md`
-- Frontend detaille: `frontend/README.md`
-- Spec API OpenAPI: `backend/docs/openapi.yaml`
+## 12. Qualite, tests et definition of done
 
-## Workflow equipe
-
-Branches recommandees:
-
-- `main` : stable/production
-- `develop` : integration continue
-- `feature/*` : nouvelles fonctionnalites
-- `fix/*` : corrections
-
-Bonnes pratiques PR:
-
-- PR petite et ciblee
-- Description claire (contexte, changements, tests)
-- Captures ecran si impact UI
-- Verification locale avant push
-
-## Qualite et tests
+### 12.1 Verification minimale avant PR
 
 Backend:
 
 ```bash
 cd backend
 composer run test
+php artisan optimize:clear
 ```
 
 Frontend:
@@ -189,36 +290,91 @@ cd frontend
 npm run build
 ```
 
-## Depannage
+### 12.2 Definition of done (DoD)
 
-### 1) CORS / Failed to fetch
+Une tache est consideree terminee si:
 
-- Verifier `VITE_API_BASE_URL`
-- Verifier que backend tourne bien sur le port attendu
-- Vider cache Laravel:
+- le code compile/execute localement,
+- les cas principaux sont verifies,
+- la doc impactee est mise a jour,
+- la PR est lisible et reviewable,
+- aucun secret n'est committe.
+
+## 13. Livrables Bloc 03 (rappel)
+
+Pour rester aligne avec le CDC:
+
+- rapport cloud (analyse, comparaison, recommandation, budget),
+- diagrammes C4 (C1 et C2 obligatoires),
+- conteneurisation complete (`Dockerfile`, `docker-compose.yml`),
+- CI/CD (lint, tests, build, push image tag SHA),
+- `CONTRIBUTING.md` et workflow Git propre.
+
+## 14. Depannage avance
+
+### 14.1 Frontend: `Failed to fetch`
+
+- Verifier `VITE_API_BASE_URL`.
+- Verifier que l'API tourne sur `127.0.0.1:8000`.
+- Verifier CORS backend.
 
 ```bash
 cd backend
 php artisan optimize:clear
 ```
 
-### 2) 401 Unauthorized
+### 14.2 API: erreurs 500 sur `/api/login` ou `/api/formations`
 
-- Se reconnecter (token expire)
-- Verifier role selon route protegee
-- Verifier que `JWT_SECRET` existe dans `backend/.env`
+Ca arrive souvent si la DB configuree n'est pas disponible.
 
-### 3) Migrations en erreur
-
-- Verifier credentials MySQL
-- Verifier existence de la base
-- Repartir proprement:
+- Verifier `DB_CONNECTION` et credentials dans `backend/.env`.
+- Verifier que MySQL est demarre.
+- Verifier migrations.
 
 ```bash
 cd backend
-php artisan migrate:fresh --seed
+php artisan migrate:status
 ```
+
+### 14.3 MongoDB: collection vide dans Compass
+
+- Verifier service MongoDB actif.
+- Verifier `MONGODB_DATABASE=skillhub_logs`.
+- Vider cache Laravel + redemarrer serveur.
+- Declencher un event (`/api/register`), puis refresh Compass.
+
+```bash
+cd backend
+php artisan optimize:clear
+```
+
+### 14.4 JWT: 401 Unauthorized
+
+- Token absent/expire.
+- `JWT_SECRET` manquant.
+- Header `Authorization: Bearer <token>` absent.
+
+Regenerer le secret si necessaire:
+
+```bash
+cd backend
+php artisan jwt:secret
+```
+
+### 14.5 Composer: extension `ext-sodium` manquante
+
+Si `composer install` signale `ext-sodium` manquante:
+
+- activer l'extension sodium dans `php.ini`,
+- puis relancer `composer install`.
+
+## 15. Documentation detaillee
+
+- Guide backend: `backend/README.md`
+- Guide frontend: `frontend/README.md`
+- OpenAPI: `backend/docs/openapi.yaml`
+- CDC Bloc 03: `CDC_Bloc03_SkillHub.pdf`
 
 ---
 
-Si vous arrivez sur le projet, commencez par ce README, puis enchainez avec `backend/README.md` ou `frontend/README.md` selon votre scope.
+Si vous rejoignez le projet: commencez par ce README, puis passez a votre scope (`frontend` ou `backend`) pour les details techniques.

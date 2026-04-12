@@ -12,6 +12,7 @@ Application frontend de SkillHub: interface apprenant/formateur, navigation, mod
 - [Scripts utiles](#scripts-utiles)
 - [Architecture applicative](#architecture-applicative)
 - [Pages principales](#pages-principales)
+- [Roles et responsabilites](#roles-et-responsabilites)
 - [Services API](#services-api)
 - [Gestion de session](#gestion-de-session)
 - [Conventions equipe](#conventions-equipe)
@@ -107,6 +108,32 @@ Les pages consomment l'API via `src/services/*` et ne parlent pas directement a 
 - `/dashboard/formateur` : CRUD formations formateur
 - `/dashboard/apprenant` : suivi des formations apprenant
 - `/apprendre/:id` : lecture des modules
+
+## Roles et responsabilites
+
+Cette section clarifie qui fait quoi a la fois dans l'application et dans l'equipe projet.
+
+### Roles applicatifs (dans le frontend)
+
+| Role | Ce que l'utilisateur voit/can faire dans l'UI | Ecrans principaux |
+|---|---|---|
+| `formateur` | Acceder au dashboard formateur, creer/modifier/supprimer ses formations, gerer ses modules | `/dashboard/formateur`, `/formation/:id` |
+| `apprenant` | Parcourir le catalogue, s'inscrire/se desinscrire, suivre sa progression | `/formations`, `/dashboard/apprenant`, `/apprendre/:id` |
+
+### Roles equipe Bloc 03 (organisation du travail)
+
+| Role | Responsabilites cote frontend | Resultat attendu |
+|---|---|---|
+| **Cloud Architect** | Verifier que les contraintes UI sont compatibles avec l'architecture cible (routes, endpoints, flux) | Cohesion frontend/back dans les diagrammes C4 et le rapport |
+| **DevOps Engineer** | Dockeriser le frontend (build multi-stage, Nginx), integrer le build frontend dans CI/CD | `frontend/Dockerfile` fiable + etape build frontend dans pipeline |
+| **Tech Lead** | Garantir la coherence UI/API, relire les PR, faire respecter conventions et qualite | PR front relues, conventions respectees, incidents d'integration reduits |
+
+### Regles simples de collaboration
+
+- Toute evolution frontend passe par `feature/*` puis Pull Request vers `develop`.
+- Les commits suivent `Conventional Commits` (`feat:`, `fix:`, `docs:`, `ci:`, `docker:`...).
+- Avant push: verifier `npm run build` pour eviter les regressions.
+- Les changements API attendus doivent etre notes dans la PR (endpoint, payload, erreurs).
 
 ## Services API
 

@@ -13,6 +13,7 @@ Backend API de SkillHub: authentification JWT, catalogue de formations, modules,
 - [Scripts utiles](#scripts-utiles)
 - [Routes API principales](#routes-api-principales)
 - [Auth et roles](#auth-et-roles)
+- [Roles et responsabilites](#roles-et-responsabilites)
 - [Base de donnees et migrations](#base-de-donnees-et-migrations)
 - [MongoDB et logs d'activite](#mongodb-et-logs-dactivite)
 - [Tests et qualite](#tests-et-qualite)
@@ -151,6 +152,32 @@ Apprenant (`check.role:apprenant`):
 - Le middleware `CheckRole` renvoie:
   - `401` si non authentifie
   - `403` si role non autorise
+
+## Roles et responsabilites
+
+Cette section precise les roles metier exposes par l'API et les roles d'organisation Bloc 03.
+
+### Roles applicatifs (dans le backend)
+
+| Role | Capacites API | Endpoints principaux |
+|---|---|---|
+| `formateur` | CRUD de ses formations + gestion de modules | `POST/PUT/DELETE /api/formations/*`, `POST/PUT/DELETE /api/modules/*` |
+| `apprenant` | Inscription/desinscription + consultation de ses formations suivies | `POST/DELETE /api/formations/{formation}/inscription`, `GET /api/apprenant/formations` |
+
+### Roles equipe Bloc 03 (responsabilites projet)
+
+| Role | Responsabilites cote backend/infra | Livrables pilotes |
+|---|---|---|
+| **Cloud Architect** | Definir architecture cible et contraintes (DB, disponibilite, securite, scalabilite) | Rapport cloud, C4 C1/C2, budget N1/N2 |
+| **DevOps Engineer** | Dockeriser backend + bases, automatiser CI/CD, healthchecks et orchestration | `backend/Dockerfile`, `docker-compose.yml`, workflow CI/CD |
+| **Tech Lead** | Piloter conventions Git, revues PR, qualite code, securite secrets et gouvernance technique | `CONTRIBUTING.md`, checklist de release, coherence globale |
+
+### Regles de collaboration recommandees
+
+- Chaque tache backend passe par une branche `feature/*` avec Pull Request.
+- Les commits suivent `Conventional Commits`.
+- Toute PR backend doit mentionner les impacts API (route, payload, codes erreur).
+- Les commandes de verification minimales avant merge: `composer run test` et `php artisan optimize:clear`.
 
 ## Base de donnees et migrations
 
