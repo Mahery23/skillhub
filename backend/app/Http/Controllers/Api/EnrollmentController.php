@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
 use App\Models\Formation;
 use App\Models\User;
+use App\Services\ActivityLogService;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -13,6 +14,11 @@ use Illuminate\Http\JsonResponse;
  */
 class EnrollmentController extends Controller
 {
+    public function __construct(
+        private readonly ActivityLogService $activityLogService,
+    ) {
+    }
+
     /**
      * Inscrit l'apprenant connecté à une formation.
      */
@@ -35,6 +41,12 @@ class EnrollmentController extends Controller
             'utilisateur_id' => $user->id,
             'formation_id' => $formation->id,
             'progression' => 0,
+        ]);
+
+        $this->activityLogService->log('course_enrollment', [
+            'user_id' => $user->id,
+            'course_id' => $formation->id,
+            'enrollment_id' => $enrollment->id,
         ]);
 
         return response()->json([

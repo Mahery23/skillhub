@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Formation;
+use App\Services\ActivityLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,6 +16,11 @@ use Illuminate\Http\Request;
  */
 class FormationController extends Controller
 {
+    public function __construct(
+        private readonly ActivityLogService $activityLogService,
+    ) {
+    }
+
     private const CATEGORIES = [
         'Développement web',
         'Data',
@@ -70,6 +76,11 @@ class FormationController extends Controller
         $formation->increment('nombre_de_vues');
         $formation->refresh()->load(['formateur:id,nom', 'modules:id,formation_id,titre,contenu,ordre,date_creation'])->loadCount('inscriptions');
 
+        $this->activityLogService->log('course_view', [
+            'course_id' => $formation->id,
+            'viewed_by' => auth('api')->id(),
+        ]);
+
         return response()->json([
             'formation' => $this->formatFormation($formation, true),
         ]);
@@ -95,6 +106,16 @@ class FormationController extends Controller
             'nombre_de_vues' => 0,
         ]);
 
+        $this->activityLogService->log('course_created', [
+            'course_id' => $formation->id,
+            'created_by' => auth('api')->id(),
+            'values' => [
+                'titre' => $formation->titre,
+                'categorie' => $formation->categorie,
+                'niveau' => $formation->niveau,
+            ],
+        ]);
+
         return response()->json([
             'message' => 'Formation created successfully',
             'formation' => $this->formatFormation($formation->load('formateur:id,nom'), true),
@@ -108,6 +129,13 @@ class FormationController extends Controller
     {
         $this->ensureTrainer($formation);
 
+        $oldValues = [
+            'titre' => $formation->titre,
+            'description' => $formation->description,
+            'categorie' => $formation->categorie,
+            'niveau' => $formation->niveau,
+        ];
+
         $validated = $request->validate([
             'titre' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
@@ -116,6 +144,18 @@ class FormationController extends Controller
         ]);
 
         $formation->update($validated);
+
+        $this->activityLogService->log('course_update', [
+            'course_id' => $formation->id,
+            'updated_by' => auth('api')->id(),
+            'old_values' => $oldValues,
+            'new_values' => [
+                'titre' => $formation->titre,
+                'description' => $formation->description,
+                'categorie' => $formation->categorie,
+                'niveau' => $formation->niveau,
+            ],
+        ]);
 
         return response()->json([
             'message' => 'Formation updated successfully',
@@ -129,6 +169,11 @@ class FormationController extends Controller
     public function destroy(Formation $formation): JsonResponse
     {
         $this->ensureTrainer($formation);
+
+        $this->activityLogService->log('course_deleted', [
+            'course_id' => $formation->id,
+            'deleted_by' => auth('api')->id(),
+        ]);
 
         $formation->delete();
 

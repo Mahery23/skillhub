@@ -6,10 +6,10 @@ use App\Http\Controllers\Api\FormationController;
 use App\Http\Controllers\Api\ModuleController;
 use Illuminate\Support\Facades\Route;
 
-const FORMATION_ROUTE = '/formations/{formation}';
-const FORMATION_MODULES_ROUTE = '/formations/{formation}/modules';
-const FORMATION_ENROLLMENT_ROUTE = '/formations/{formation}/inscription';
-const MODULE_ROUTE = '/modules/{module}';
+defined('FORMATION_ROUTE') || define('FORMATION_ROUTE', '/formations/{formation}');
+defined('FORMATION_MODULES_ROUTE') || define('FORMATION_MODULES_ROUTE', '/formations/{formation}/modules');
+defined('FORMATION_ENROLLMENT_ROUTE') || define('FORMATION_ENROLLMENT_ROUTE', '/formations/{formation}/inscription');
+defined('MODULE_ROUTE') || define('MODULE_ROUTE', '/modules/{module}');
 
 // Endpoints publics d'authentification.
 Route::post('/register', [AuthController::class, 'register']);
