@@ -1,15 +1,11 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-
-const formationsUne = [
-    { id: 1, titre: "Introduction à React", niveau: "Débutant", categorie: "Développement web", description: "Apprenez les bases de React.js et construisez vos premières interfaces modernes.", apprenants: 35, vues: 120 },
-    { id: 2, titre: "Laravel & API REST", niveau: "Intermédiaire", categorie: "Backend", description: "Construisez une API REST complète avec authentification JWT et bonnes pratiques.", apprenants: 22, vues: 98 },
-    { id: 3, titre: "Docker & DevOps", niveau: "Avancé", categorie: "DevOps", description: "Maîtrisez la conteneurisation et le déploiement d'applications en production.", apprenants: 18, vues: 75 },
-]
+import { getFormations } from '../services/formationService'
 
 const niveauConfig = {
-    'Débutant':      { label: 'Débutant',      cls: 'sh-badge-green' },
-    'Intermédiaire': { label: 'Intermédiaire', cls: 'sh-badge-amber' },
-    'Avancé':        { label: 'Avancé',        cls: 'sh-badge-red'   },
+    debutant: { label: 'Débutant', cls: 'sh-badge-green' },
+    intermediaire: { label: 'Intermédiaire', cls: 'sh-badge-amber' },
+    avance: { label: 'Avancé', cls: 'sh-badge-red' },
 }
 
 const temoignages = [
@@ -31,7 +27,83 @@ const valeurs = [
     { icon: '◆', titre: 'Excellence',    desc: 'Des contenus de qualité créés par des formateurs passionnés et experts.' },
 ]
 
-function Home({ user, onOpenLogin, onOpenRegister }) {
+function Home(props) {
+    const user = props?.user || null
+    const onOpenLogin = props?.onOpenLogin || (() => {})
+    const onOpenRegister = props?.onOpenRegister || (() => {})
+    const userRole = user?.role || ''
+    const dashboardPath = userRole === 'formateur' ? '/dashboard/formateur' : '/dashboard/apprenant'
+    const [formationsUne, setFormationsUne] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState('')
+
+    useEffect(() => {
+        let active = true
+
+        const loadFormations = async () => {
+            try {
+                setLoading(true)
+                setError('')
+                const formations = await getFormations()
+
+                if (active) {
+                    setFormationsUne(formations.slice(0, 3))
+                }
+            } catch (loadError) {
+                if (active) {
+                    setError(loadError.message || 'Impossible de charger les formations.')
+                }
+            } finally {
+                if (active) {
+                    setLoading(false)
+                }
+            }
+        }
+
+        loadFormations()
+
+        return () => {
+            active = false
+        }
+    }, [])
+
+    const formatDescription = (formation) => formation?.mini_description || formation?.description || ''
+    const featuredFormationsContent = loading ? (
+        <div className="text-center py-4">Chargement des formations...</div>
+    ) : error ? (
+        <div className="alert alert-warning mb-0">{error}</div>
+    ) : formationsUne.length > 0 ? (
+        <div className="row g-4">
+            {formationsUne.map((formation) => {
+                const badgeKey = (formation.niveau || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')
+
+                return (
+                    <div className="col-md-4" key={formation.id}>
+                        <div className="sh-formation-card">
+                            <div className="sh-formation-card-top">
+                                <span className="sh-cat-tag">{formation.categorie}</span>
+                                <span className={`sh-badge ${niveauConfig[badgeKey]?.cls || 'sh-badge-green'}`}>
+                                    {niveauConfig[badgeKey]?.label || formation.niveau}
+                                </span>
+                            </div>
+                            <h6 className="sh-formation-title">{formation.titre}</h6>
+                            <p className="sh-formation-desc">{formatDescription(formation)}</p>
+                            <div className="sh-formation-meta">
+                                <span>👥 {formation.apprenants ?? 0} apprenants</span>
+                                <span>👁 {formation.vues ?? 0} vues</span>
+                            </div>
+                            <Link to={`/formation/${formation.id}`} className="sh-btn sh-btn--card-cta">
+                                Voir le détail
+                            </Link>
+                        </div>
+                    </div>
+                )
+            })}
+        </div>
+    ) : (
+        <div className="text-center py-4">Aucune formation disponible pour le moment.</div>
+    )
+
     return (
         <div className="sh-home">
 
@@ -53,7 +125,7 @@ function Home({ user, onOpenLogin, onOpenRegister }) {
                             </p>
                             <div className="sh-hero-actions">
                                 {user ? (
-                                    <Link to={user.role === 'formateur' ? '/dashboard/formateur' : '/dashboard/apprenant'} className="sh-btn sh-btn--primary">
+                                    <Link to={dashboardPath} className="sh-btn sh-btn--primary">
                                         Mon dashboard
                                     </Link>
                                 ) : (
@@ -190,27 +262,7 @@ function Home({ user, onOpenLogin, onOpenRegister }) {
                         </div>
                         <Link to="/formations" className="sh-link-more">Voir toutes →</Link>
                     </div>
-                    <div className="row g-4">
-                        {formationsUne.map(f => (
-                            <div className="col-md-4" key={f.id}>
-                                <div className="sh-formation-card">
-                                    <div className="sh-formation-card-top">
-                                        <span className="sh-cat-tag">{f.categorie}</span>
-                                        <span className={`sh-badge ${niveauConfig[f.niveau].cls}`}>{niveauConfig[f.niveau].label}</span>
-                                    </div>
-                                    <h6 className="sh-formation-title">{f.titre}</h6>
-                                    <p className="sh-formation-desc">{f.description}</p>
-                                    <div className="sh-formation-meta">
-                                        <span>👥 {f.apprenants} apprenants</span>
-                                        <span>👁 {f.vues} vues</span>
-                                    </div>
-                                    <Link to={`/formation/${f.id}`} className="sh-btn sh-btn--card-cta">
-                                        Voir le détail
-                                    </Link>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    {featuredFormationsContent}
                 </div>
             </section>
 
@@ -269,7 +321,7 @@ function Home({ user, onOpenLogin, onOpenRegister }) {
                     <p className="sh-cta-sub">Rejoignez des milliers d'apprenants et formateurs sur SkillHub — c'est gratuit.</p>
                     <div className="sh-cta-actions">
                         {user ? (
-                            <Link to={user.role === 'formateur' ? '/dashboard/formateur' : '/dashboard/apprenant'} className="sh-btn sh-btn--white">
+                            <Link to={dashboardPath} className="sh-btn sh-btn--white">
                                 Mon dashboard
                             </Link>
                         ) : (
@@ -291,3 +343,4 @@ function Home({ user, onOpenLogin, onOpenRegister }) {
 }
 
 export default Home
+

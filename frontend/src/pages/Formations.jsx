@@ -1,37 +1,64 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+/* eslint-disable react/prop-types */
 
-const FORMATIONS = [
-  { id: 1, titre: "Introduction à React", niveau: "Débutant", categorie: "Développement web", description: "Apprenez les bases de React.js et construisez vos premières interfaces modernes.", apprenants: 35, vues: 120, formateur: "Alice Martin" },
-  { id: 2, titre: "Laravel & API REST", niveau: "Intermédiaire", categorie: "Backend", description: "Construisez une API REST complète avec authentification JWT et bonnes pratiques.", apprenants: 22, vues: 98, formateur: "Karim Diallo" },
-  { id: 3, titre: "Docker & DevOps", niveau: "Avancé", categorie: "DevOps", description: "Maîtrisez la conteneurisation et le déploiement d'applications en production.", apprenants: 18, vues: 75, formateur: "Sophie Lefèvre" },
-  { id: 4, titre: "UI/UX Design Figma", niveau: "Débutant", categorie: "Design", description: "Créez des interfaces utilisateur modernes et intuitives avec Figma.", apprenants: 41, vues: 210, formateur: "Marc Dubois" },
-  { id: 5, titre: "Python pour la Data", niveau: "Intermédiaire", categorie: "Data", description: "Analysez et visualisez des données avec Python, Pandas et Matplotlib.", apprenants: 30, vues: 145, formateur: "Lina Morel" },
-  { id: 6, titre: "Marketing Digital", niveau: "Débutant", categorie: "Marketing", description: "Maîtrisez les fondamentaux du marketing digital et des réseaux sociaux.", apprenants: 27, vues: 89, formateur: "Tom Bernard" },
-  { id: 7, titre: "Node.js & Express", niveau: "Intermédiaire", categorie: "Backend", description: "Développez des API performantes avec Node.js et le framework Express.", apprenants: 19, vues: 67, formateur: "Alice Martin" },
-  { id: 8, titre: "Machine Learning", niveau: "Avancé", categorie: "Data", description: "Construisez vos premiers modèles de machine learning avec scikit-learn.", apprenants: 12, vues: 54, formateur: "Karim Diallo" },
-  { id: 9, titre: "CSS Avancé & Animations", niveau: "Intermédiaire", categorie: "Design", description: "Maîtrisez Flexbox, Grid et les animations CSS pour des interfaces dynamiques.", apprenants: 24, vues: 103, formateur: "Sophie Lefèvre" },
-]
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { getFormations } from '../services/formationService'
 
 const CATEGORIES = ["Toutes", "Développement web", "Backend", "DevOps", "Design", "Data", "Marketing"]
 const NIVEAUX = ["Tous", "Débutant", "Intermédiaire", "Avancé"]
 
 const niveauConfig = {
-  'Débutant':      { cls: 'sh-badge-green' },
-  'Intermédiaire': { cls: 'sh-badge-amber' },
-  'Avancé':        { cls: 'sh-badge-red'   },
+  debutant: { cls: 'sh-badge-green' },
+  intermediaire: { cls: 'sh-badge-amber' },
+  avance: { cls: 'sh-badge-red' },
 }
 
 function Formations() {
-  const [recherche, setRecherche]     = useState('')
-  const [categorie, setCategorie]     = useState('Toutes')
-  const [niveau, setNiveau]           = useState('Tous')
+  const [formations, setFormations] = useState([])
+  const [recherche, setRecherche] = useState('')
+  const [categorie, setCategorie] = useState('Toutes')
+  const [niveau, setNiveau] = useState('Tous')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const formationsFiltrees = FORMATIONS.filter(f => {
+  useEffect(() => {
+    let active = true
+
+    const loadFormations = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const data = await getFormations()
+
+        if (active) {
+          setFormations(data)
+        }
+      } catch (loadError) {
+        if (active) {
+          setError(loadError.message || 'Impossible de charger les formations.')
+        }
+      } finally {
+        if (active) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadFormations()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const formationsFiltrees = formations.filter(f => {
+    const description = f.description || f.mini_description || ''
+    const formateurNom = f.formateur?.nom || ''
     const matchRecherche = f.titre.toLowerCase().includes(recherche.toLowerCase()) ||
-        f.description.toLowerCase().includes(recherche.toLowerCase())
+        description.toLowerCase().includes(recherche.toLowerCase()) ||
+        formateurNom.toLowerCase().includes(recherche.toLowerCase())
     const matchCategorie = categorie === 'Toutes' || f.categorie === categorie
-    const matchNiveau    = niveau === 'Tous' || f.niveau === niveau
+    const matchNiveau = niveau === 'Tous' || f.niveau === niveau
     return matchRecherche && matchCategorie && matchNiveau
   })
 
@@ -41,6 +68,12 @@ function Formations() {
     setNiveau('Tous')
   }
 
+  const statusMessage = loading ? (
+      <div className="text-center py-4">Chargement des formations...</div>
+  ) : error ? (
+      <div className="alert alert-warning">{error}</div>
+  ) : null
+
   return (
       <div>
         {/* En-tête */}
@@ -48,7 +81,7 @@ function Formations() {
           <div className="container text-center">
             <h1 className="sh-section-title--light mb-2">Toutes les formations</h1>
             <p className="sh-section-sub--light">
-              {FORMATIONS.length} formations disponibles — gratuites et accessibles à tous
+              {formations.length} formations disponibles — gratuites et accessibles à tous
             </p>
           </div>
         </section>
@@ -60,10 +93,11 @@ function Formations() {
 
               {/* Recherche */}
               <div className="col-md-4">
-                <label className="form-label small fw-semibold" style={{ color: 'var(--text-secondary)' }}>
+                <label htmlFor="formation-search" className="form-label small fw-semibold" style={{ color: 'var(--text-secondary)' }}>
                   Recherche
                 </label>
                 <input
+                    id="formation-search"
                     type="text"
                     className="form-control"
                     placeholder="Rechercher une formation..."
@@ -74,10 +108,11 @@ function Formations() {
 
               {/* Catégorie */}
               <div className="col-md-3">
-                <label className="form-label small fw-semibold" style={{ color: 'var(--text-secondary)' }}>
+                <label htmlFor="formation-categorie" className="form-label small fw-semibold" style={{ color: 'var(--text-secondary)' }}>
                   Catégorie
                 </label>
                 <select
+                    id="formation-categorie"
                     className="form-select"
                     value={categorie}
                     onChange={e => setCategorie(e.target.value)}
@@ -90,10 +125,11 @@ function Formations() {
 
               {/* Niveau */}
               <div className="col-md-3">
-                <label className="form-label small fw-semibold" style={{ color: 'var(--text-secondary)' }}>
+                <label htmlFor="formation-niveau" className="form-label small fw-semibold" style={{ color: 'var(--text-secondary)' }}>
                   Niveau
                 </label>
                 <select
+                    id="formation-niveau"
                     className="form-select"
                     value={niveau}
                     onChange={e => setNiveau(e.target.value)}
@@ -122,6 +158,8 @@ function Formations() {
         <section className="sh-section">
           <div className="container">
 
+            {statusMessage}
+
             {/* Compteur résultats */}
             <p className="mb-4 small" style={{ color: 'var(--text-secondary)' }}>
               {formationsFiltrees.length} formation{formationsFiltrees.length > 1 ? 's' : ''} trouvée{formationsFiltrees.length > 1 ? 's' : ''}
@@ -135,16 +173,16 @@ function Formations() {
                         <div className="sh-formation-card">
                           <div className="sh-formation-card-top">
                             <span className="sh-cat-tag">{f.categorie}</span>
-                            <span className={`sh-badge ${niveauConfig[f.niveau].cls}`}>{f.niveau}</span>
+                            <span className={`sh-badge ${niveauConfig[(f.niveau || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')]?.cls || 'sh-badge-green'}`}>{f.niveau}</span>
                           </div>
                           <h6 className="sh-formation-title">{f.titre}</h6>
-                          <p className="sh-formation-desc">{f.description}</p>
+                          <p className="sh-formation-desc">{f.description || f.mini_description || ''}</p>
                           <p className="small" style={{ color: 'var(--text-muted)' }}>
-                            Par {f.formateur}
+                            Par {f.formateur?.nom || 'SkillHub'}
                           </p>
                           <div className="sh-formation-meta">
-                            <span>👥 {f.apprenants} apprenants</span>
-                            <span>👁 {f.vues} vues</span>
+                            <span>👥 {f.apprenants ?? 0} apprenants</span>
+                            <span>👁 {f.vues ?? 0} vues</span>
                           </div>
                           <Link to={`/formation/${f.id}`} className="sh-btn sh-btn--card-cta">
                             Voir le détail
