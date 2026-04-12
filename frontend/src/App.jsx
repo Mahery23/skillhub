@@ -57,7 +57,7 @@ function App() {
                 <Route path="/formations" element={<Formations />} />
                 <Route path="/formation/:id" element={<FormationDetail user={user} onOpenLogin={() => setShowLogin(true)} />} />
                 <Route path="/dashboard/formateur" element={<DashboardFormateur user={user} />} />
-                <Route path="/dashboard/apprenant" element={<DashboardApprenant />} />
+                <Route path="/dashboard/apprenant" element={<DashboardApprenant user={user} />} />
                 <Route path="/apprendre/:id" element={<SuiviFormation />} />
             </Routes>
             <Footer />
