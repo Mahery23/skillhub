@@ -9,8 +9,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
+/**
+ * Gère l'authentification API SkillHub en JWT.
+ *
+ * Ce contrôleur centralise l'inscription, la connexion,
+ * la récupération du profil connecté et la déconnexion.
+ */
 class AuthController extends Controller
 {
+    /**
+     * Crée un utilisateur SkillHub puis retourne un token JWT.
+     *
+     * @param  Request  $request  Données d'inscription attendues: name, email, password, role.
+     */
     public function register(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
@@ -43,6 +54,11 @@ class AuthController extends Controller
         ], 201);
     }
 
+    /**
+     * Authentifie un utilisateur et retourne son token JWT.
+     *
+     * @param  Request  $request  Identifiants attendus: email et password.
+     */
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
@@ -66,6 +82,9 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Retourne le profil de l'utilisateur authentifié via JWT.
+     */
     public function profile(): JsonResponse
     {
         $user = auth('api')->user();
@@ -75,6 +94,9 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Invalide le token JWT courant.
+     */
     public function logout(): JsonResponse
     {
         auth('api')->logout();
@@ -84,6 +106,12 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Normalise le modèle User vers le format JSON attendu par le frontend.
+     *
+     * @param  User|null  $user  Utilisateur à convertir.
+     * @return array<string, mixed>
+     */
     private function formatUser(?User $user): array
     {
         if (! $user) {
