@@ -10,33 +10,37 @@ import DashboardApprenant from './pages/DashboardApprenant'
 import SuiviFormation from './pages/SuiviFormation'
 import LoginModal from './modals/LoginModal'
 import RegisterModal from './modals/RegisterModal'
+import {
+    getStoredUser,
+    login as loginUser,
+    logout as logoutUser,
+    register as registerUser,
+} from './services/authService'
 
-const STORAGE_KEY = 'skillhub_user'
 
 function App() {
     const [user, setUser] = useState(() => {
-        const savedUser = localStorage.getItem(STORAGE_KEY)
-        return savedUser ? JSON.parse(savedUser) : null
+        return getStoredUser() || null
     })
     const [showLogin, setShowLogin] = useState(false)
     const [showRegister, setShowRegister] = useState(false)
     const [preferredRole, setPreferredRole] = useState('apprenant')
 
-    const handleLogin = (loggedUser) => {
-        setUser(loggedUser)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(loggedUser))
+    const handleLogin = async (credentials) => {
+        const session = await loginUser(credentials)
+        setUser(session.user)
         setShowLogin(false)
     }
 
-    const handleRegister = (registeredUser) => {
-        setUser(registeredUser)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(registeredUser))
+    const handleRegister = async (payload) => {
+        const session = await registerUser(payload)
+        setUser(session.user)
         setShowRegister(false)
     }
 
     const handleLogout = () => {
+        logoutUser()
         setUser(null)
-        localStorage.removeItem(STORAGE_KEY)
     }
 
     const openRegister = (role = 'apprenant') => {

@@ -1,46 +1,9 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+import { API_BASE_URL, apiRequest } from './apiClient'
 
 const TOKEN_KEY = 'skillhub_token'
 const USER_KEY = 'skillhub_user'
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-const parseJson = async (response) => {
-  const text = await response.text()
-
-  if (!text) {
-    return {}
-  }
-
-  try {
-    return JSON.parse(text)
-  } catch {
-    return {}
-  }
-}
-
-const request = async (path, options = {}) => {
-  if (!API_BASE_URL) {
-    return null
-  }
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  })
-
-  const payload = await parseJson(response)
-
-  if (!response.ok) {
-    const message = payload?.message || 'Une erreur est survenue.'
-    throw new Error(message)
-  }
-
-  return payload
-}
 
 const normalizeUser = (rawUser = {}, fallback = {}) => ({
   id: rawUser.id || fallback.id || null,
@@ -63,7 +26,7 @@ const clearSession = () => {
 }
 
 const loginWithApi = async ({ email, password }) => {
-  const payload = await request('/api/login', {
+  const payload = await apiRequest('/api/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   })
@@ -82,7 +45,7 @@ const loginWithApi = async ({ email, password }) => {
 }
 
 const registerWithApi = async ({ name, email, password, role }) => {
-  const payload = await request('/api/register', {
+  const payload = await apiRequest('/api/register', {
     method: 'POST',
     body: JSON.stringify({ name, email, password, role }),
   })
@@ -125,7 +88,7 @@ const registerWithMock = async ({ name, email, role }) => {
   return session
 }
 
-const getStoredUser = () => {
+export const getStoredUser = () => {
   const rawUser = localStorage.getItem(USER_KEY)
 
   if (!rawUser) {
@@ -142,7 +105,7 @@ const getStoredUser = () => {
 
 const getStoredToken = () => localStorage.getItem(TOKEN_KEY)
 
-const getProfile = async () => {
+export const getProfile = async () => {
   const token = getStoredToken()
 
   if (!token) {
@@ -153,7 +116,7 @@ const getProfile = async () => {
     return getStoredUser()
   }
 
-  const payload = await request('/api/profile', {
+  const payload = await apiRequest('/api/profile', {
     headers: { Authorization: `Bearer ${token}` },
   })
 
@@ -163,7 +126,7 @@ const getProfile = async () => {
   return user
 }
 
-const login = async (credentials) => {
+export const login = async (credentials) => {
   try {
     return await loginWithApi(credentials)
   } catch (error) {
@@ -175,7 +138,7 @@ const login = async (credentials) => {
   }
 }
 
-const register = async (payload) => {
+export const register = async (payload) => {
   try {
     return await registerWithApi(payload)
   } catch (error) {
@@ -187,9 +150,9 @@ const register = async (payload) => {
   }
 }
 
-const logout = () => {
+export const logout = () => {
   clearSession()
 }
 
-export { getProfile, getStoredUser, login, logout, register }
+
 
