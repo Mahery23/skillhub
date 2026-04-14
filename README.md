@@ -45,6 +45,7 @@ Fonctions coeur:
 
 - catalogue de formations,
 - details d'une formation + modules,
+- gestion des modules par le formateur (ajout, modification, suppression, ordre),
 - inscription/desinscription apprenant,
 - dashboard formateur,
 - dashboard apprenant,
@@ -108,7 +109,7 @@ Cette section distingue:
 
 | Role | Ce que le role peut faire | Pages / endpoints cle |
 |---|---|---|
-| `formateur` | Creer, modifier, supprimer ses formations; gerer modules; suivre son dashboard | `/dashboard/formateur`, `POST/PUT/DELETE /api/formations/*`, `POST/PUT/DELETE /api/modules/*` |
+| `formateur` | Creer, modifier, supprimer ses formations; gerer les modules de chaque formation (ajout, edition, suppression, ordre); suivre son dashboard | `/dashboard/formateur`, `POST/PUT/DELETE /api/formations/*`, `POST /api/formations/{formation}/modules`, `PUT/DELETE /api/modules/{module}` |
 | `apprenant` | Parcourir catalogue, s'inscrire/desinscrire, suivre sa progression | `/formations`, `/dashboard/apprenant`, `POST/DELETE /api/formations/{id}/inscription`, `GET /api/apprenant/formations` |
 
 ### 6.2 Roles equipe Bloc 03
@@ -241,10 +242,13 @@ Checklist de smoke test:
 1. Ouvrir `http://localhost:5173`.
 2. Creer un compte `formateur`.
 3. Creer une formation depuis le dashboard formateur.
-4. Se deconnecter, creer un compte `apprenant`.
-5. S'inscrire a la formation.
-6. Verifier le dashboard apprenant.
-7. Verifier que `GET /api/formations` repond 200.
+4. Ouvrir le bouton `Modules` de cette formation et ajouter un module.
+5. Modifier un module, puis verifier l'ordre et le contenu affiches sur `/formation/:id`.
+6. Supprimer un module (en respectant la regle backend de minimum 3 modules).
+7. Se deconnecter, creer un compte `apprenant`.
+8. S'inscrire a la formation.
+9. Verifier le dashboard apprenant.
+10. Verifier que `GET /api/formations` repond 200.
 
 Option verification logs MongoDB:
 

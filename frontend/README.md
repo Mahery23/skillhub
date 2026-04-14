@@ -13,6 +13,7 @@ Application frontend de SkillHub: interface apprenant/formateur, navigation, mod
 - [Architecture applicative](#architecture-applicative)
 - [Pages principales](#pages-principales)
 - [Roles et responsabilites](#roles-et-responsabilites)
+- [Gestion des modules formateur](#gestion-des-modules-formateur)
 - [Services API](#services-api)
 - [Gestion de session](#gestion-de-session)
 - [Conventions equipe](#conventions-equipe)
@@ -32,7 +33,7 @@ Application frontend de SkillHub: interface apprenant/formateur, navigation, mod
 frontend/
 ├── src/
 │   ├── components/     # Composants globaux (Navbar, Footer)
-│   ├── modals/         # Login/Register
+│   ├── modals/         # Login/Register/ModuleModal
 │   ├── pages/          # Pages metier
 │   ├── services/       # Clients API + mapping erreurs
 │   ├── App.jsx         # Routing principal + session utilisateur
@@ -105,7 +106,7 @@ Les pages consomment l'API via `src/services/*` et ne parlent pas directement a 
 - `/` : accueil
 - `/formations` : catalogue
 - `/formation/:id` : detail formation
-- `/dashboard/formateur` : CRUD formations formateur
+- `/dashboard/formateur` : CRUD formations formateur + gestion des modules
 - `/dashboard/apprenant` : suivi des formations apprenant
 - `/apprendre/:id` : lecture des modules
 
@@ -119,6 +120,22 @@ Cette section clarifie qui fait quoi a la fois dans l'application et dans l'equi
 |---|---|---|
 | `formateur` | Acceder au dashboard formateur, creer/modifier/supprimer ses formations, gerer ses modules | `/dashboard/formateur`, `/formation/:id` |
 | `apprenant` | Parcourir le catalogue, s'inscrire/se desinscrire, suivre sa progression | `/formations`, `/dashboard/apprenant`, `/apprendre/:id` |
+
+## Gestion des modules formateur
+
+Depuis `/dashboard/formateur`, le bouton `Modules` sur chaque carte formation ouvre une modale de gestion complete.
+
+Fonctionnalites disponibles:
+
+- lister les modules d'une formation,
+- ajouter un module (titre, contenu, ordre),
+- modifier un module existant,
+- supprimer un module (avec confirmation).
+
+Composants/frontend concernes:
+
+- `src/pages/DashboardFormateur.jsx` : UI de gestion modules + actions CRUD
+- `src/modals/ModuleModal.jsx` : modale reusable de saisie module
 
 ### Roles equipe Bloc 03 (organisation du travail)
 
@@ -144,6 +161,7 @@ Fichiers principaux:
 - `src/services/authService.js` : login, register, profile, logout
 - `src/services/formationService.js` : catalogue + detail + modules
 - `src/services/trainerService.js` : CRUD formateur
+- `src/services/moduleService.js` : CRUD modules formateur (`getFormationModules`, `createModule`, `updateModule`, `deleteModule`)
 - `src/services/enrollmentService.js` : inscriptions apprenant
 
 ## Gestion de session
