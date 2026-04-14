@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { Link, Navigate } from 'react-router-dom'
 import { Modal, Button, Form } from 'react-bootstrap'
 import { createFormation, deleteFormation, getMyFormations, updateFormation } from '../services/trainerService'
+import { createModule, deleteModule, getFormationModules, updateModule } from '../services/moduleService'
 import { mapApiError } from '../services/apiErrorMapper'
 
 const NIVEAUX = ['Débutant', 'Intermédiaire', 'Avancé']
@@ -38,9 +39,17 @@ function DashboardFormateur({ user }) {
   const [isSaving, setIsSaving] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+  const [showModuleModal, setShowModuleModal] = useState(false)
+  const [showModuleConfirmDelete, setShowModuleConfirmDelete] = useState(false)
   const [formData, setFormData] = useState(FORM_VIDE)
   const [formationEnCours, setFormationEnCours] = useState(null)
   const [formationASupprimer, setFormationASupprimer] = useState(null)
+  const [modules, setModules] = useState([])
+  const [loadingModules, setLoadingModules] = useState(false)
+  const [moduleEnCours, setModuleEnCours] = useState(null)
+  const [moduleASupprimer, setModuleASupprimer] = useState(null)
+  const [moduleError, setModuleError] = useState('')
+  const [selectedFormationForModules, setSelectedFormationForModules] = useState(null)
 
   useEffect(() => {
     if (userRole !== 'formateur') {
@@ -160,6 +169,90 @@ function DashboardFormateur({ user }) {
     }
   }
 
+  // Fonctions pour la gestion des modules
+  const chargerModules = async (formation) => {
+    try {
+      setLoadingModules(true)
+      setModuleError('')
+      const modulesData = await getFormationModules(formation.id)
+      setModules(modulesData)
+      setSelectedFormationForModules(formation)
+    } catch (loadError) {
+      setModuleError(mapApiError(loadError, 'module-load'))
+    } finally {
+      setLoadingModules(false)
+    }
+  }
+
+  const ouvrirAjoutModule = async (formation) => {
+    await chargerModules(formation)
+    setModuleEnCours({ titre: '', contenu: '', ordre: (modules?.length ?? 0) + 1 })
+    setModuleError('')
+    setShowModuleModal(true)
+  }
+
+  const ouvrirModificationModule = (module) => {
+    setModuleEnCours({ ...module })
+    setModuleError('')
+    setShowModuleModal(true)
+  }
+
+  const sauvegarderModule = async () => {
+    if (!moduleEnCours?.titre?.trim() || !moduleEnCours?.contenu?.trim() || !moduleEnCours?.ordre) {
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      setModuleError('')
+
+      const data = {
+        titre: moduleEnCours.titre,
+        contenu: moduleEnCours.contenu,
+        ordre: moduleEnCours.ordre,
+      }
+
+      if (moduleEnCours.id) {
+        await updateModule(moduleEnCours.id, data)
+      } else {
+        await createModule(selectedFormationForModules.id, data)
+      }
+
+      await chargerModules(selectedFormationForModules)
+      setShowModuleModal(false)
+      setModuleEnCours(null)
+    } catch (saveError) {
+      setModuleError(mapApiError(saveError, 'module-action'))
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const demanderSuppressionModule = (module) => {
+    setModuleASupprimer(module)
+    setModuleError('')
+    setShowModuleConfirmDelete(true)
+  }
+
+  const confirmerSuppressionModule = async () => {
+    if (!moduleASupprimer?.id) {
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      setModuleError('')
+      await deleteModule(moduleASupprimer.id)
+      await chargerModules(selectedFormationForModules)
+      setShowModuleConfirmDelete(false)
+      setModuleASupprimer(null)
+    } catch (deleteError) {
+      setModuleError(mapApiError(deleteError, 'module-action'))
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const stats = {
     formations: formations.length,
     apprenants: formations.reduce((acc, formation) => acc + (formation.apprenants ?? 0), 0),
@@ -229,6 +322,13 @@ function DashboardFormateur({ user }) {
                     onClick={() => ouvrirModification(formation)}
                   >
                     Modifier
+                  </button>
+                  <button
+                    className="sh-btn sh-btn--outline flex-fill"
+                    style={{ fontSize: 12, padding: '7px 10px' }}
+                    onClick={() => ouvrirAjoutModule(formation)}
+                  >
+                    Modules
                   </button>
                   <button
                     className="sh-btn flex-fill"
@@ -384,6 +484,180 @@ function DashboardFormateur({ user }) {
             Annuler
           </Button>
           <Button variant="danger" onClick={confirmerSuppression} disabled={isSaving}>
+            {isSaving ? 'Suppression...' : 'Supprimer'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modale de gestion des modules */}
+      <Modal show={showModuleModal} onHide={() => setShowModuleModal(false)} centered size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {selectedFormationForModules ? `Modules de "${selectedFormationForModules.titre}"` : 'Modules'}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {moduleError && <div className="alert alert-danger py-2">{moduleError}</div>}
+
+          {loadingModules ? (
+            <div className="text-center py-4">Chargement des modules...</div>
+          ) : (
+            <>
+              {/* Liste des modules existants */}
+              {modules.length > 0 && (
+                <div className="mb-4">
+                  <h6 className="mb-3" style={{ color: 'var(--brand-deep)' }}>
+                    Modules existants ({modules.length})
+                  </h6>
+                  <div className="d-flex flex-column gap-2">
+                    {modules
+                      .sort((a, b) => a.ordre - b.ordre)
+                      .map((module) => (
+                        <div
+                          key={module.id}
+                          className="d-flex align-items-center justify-content-between p-3 rounded-3"
+                          style={{
+                            background: 'var(--bg-white)',
+                            border: '1px solid var(--brand-border)',
+                          }}
+                        >
+                          <div className="flex-grow-1">
+                            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand-deep)' }}>
+                              {module.ordre}. {module.titre}
+                            </div>
+                            <small style={{ color: 'var(--text-secondary)' }}>
+                              {module.contenu?.substring(0, 50)}...
+                            </small>
+                          </div>
+                          <div className="d-flex gap-2">
+                            <button
+                              className="sh-btn sh-btn--outline"
+                              style={{ fontSize: 11, padding: '5px 10px' }}
+                              onClick={() => ouvrirModificationModule(module)}
+                              disabled={isSaving}
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              className="sh-btn"
+                              style={{
+                                fontSize: 11,
+                                padding: '5px 10px',
+                                background: 'var(--red-bg)',
+                                color: 'var(--red-text)',
+                                borderRadius: '999px',
+                              }}
+                              onClick={() => demanderSuppressionModule(module)}
+                              disabled={isSaving}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  <hr className="my-4" />
+                </div>
+              )}
+
+              {/* Formulaire d'ajout/modification de module */}
+              <div>
+                <h6 className="mb-3" style={{ color: 'var(--brand-deep)' }}>
+                  {moduleEnCours?.id ? 'Modifier le module' : 'Ajouter un nouveau module'}
+                </h6>
+                <Form>
+                  <Form.Group className="mb-3">
+                    <label htmlFor="module-ordre" className="form-label">
+                      Position du module
+                    </label>
+                    <Form.Select
+                      id="module-ordre"
+                      value={moduleEnCours?.ordre || ''}
+                      onChange={(e) => setModuleEnCours({ ...moduleEnCours, ordre: parseInt(e.target.value) })}
+                    >
+                      <option value="">Sélectionner une position</option>
+                      {Array.from({ length: (modules?.length ?? 0) + 1 }, (_, i) => i + 1).map((ordre) => {
+                        const isOrdreUsed = modules?.some(m => m.ordre === ordre && m.id !== moduleEnCours?.id)
+                        return !isOrdreUsed ? (
+                          <option key={ordre} value={ordre}>
+                            Position {ordre}
+                          </option>
+                        ) : null
+                      })}
+                    </Form.Select>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <label htmlFor="module-titre" className="form-label">
+                      Titre du module
+                    </label>
+                    <Form.Control
+                      id="module-titre"
+                      type="text"
+                      placeholder="Titre du module"
+                      value={moduleEnCours?.titre || ''}
+                      onChange={(e) => setModuleEnCours({ ...moduleEnCours, titre: e.target.value })}
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <label htmlFor="module-contenu" className="form-label">
+                      Contenu du module
+                    </label>
+                    <Form.Control
+                      id="module-contenu"
+                      as="textarea"
+                      rows={4}
+                      placeholder="Contenu du module (description, objectifs, ressources, etc.)"
+                      value={moduleEnCours?.contenu || ''}
+                      onChange={(e) => setModuleEnCours({ ...moduleEnCours, contenu: e.target.value })}
+                    />
+                    <small className="text-muted d-block mt-1">
+                      {(moduleEnCours?.contenu || '').length} caractères
+                    </small>
+                  </Form.Group>
+                </Form>
+              </div>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setShowModuleModal(false)} disabled={isSaving}>
+            Fermer
+          </Button>
+          <Button
+            variant="primary"
+            onClick={sauvegarderModule}
+            disabled={
+              isSaving ||
+              !moduleEnCours?.titre?.trim() ||
+              !moduleEnCours?.contenu?.trim() ||
+              !moduleEnCours?.ordre
+            }
+          >
+            {isSaving ? (moduleEnCours?.id ? 'Modification...' : 'Création...') : (moduleEnCours?.id ? 'Enregistrer' : 'Ajouter')}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Confirmation de suppression de module */}
+      <Modal show={showModuleConfirmDelete} onHide={() => setShowModuleConfirmDelete(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirmer la suppression du module</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Êtes-vous sûr de vouloir supprimer ce module ? Cette action est irréversible.</p>
+          {moduleASupprimer && (
+            <p className="mb-0 small text-muted">
+              Module : <strong>{moduleASupprimer.titre}</strong>
+            </p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setShowModuleConfirmDelete(false)} disabled={isSaving}>
+            Annuler
+          </Button>
+          <Button variant="danger" onClick={confirmerSuppressionModule} disabled={isSaving}>
             {isSaving ? 'Suppression...' : 'Supprimer'}
           </Button>
         </Modal.Footer>
