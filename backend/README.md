@@ -124,6 +124,23 @@ Public:
 - `GET /api/formations/{formation}`
 - `GET /api/formations/{formation}/modules`
 
+Payload attendu pour `POST /api/register`:
+
+- `prenom` (obligatoire)
+- `nom` (obligatoire)
+- `contact` (obligatoire, numero de telephone)
+- `email` (obligatoire, unique)
+- `password` (obligatoire)
+- `role` (obligatoire: `apprenant` ou `formateur`)
+
+Reponse utilisateur (`register`, `login`, `profile`) inclut maintenant:
+
+- `name` (concat `prenom + nom`)
+- `prenom`
+- `nom`
+- `contact`
+- `email`, `role`, `date_creation`
+
 Note metier sur `GET /api/formations/{formation}`:
 
 - Incremente le compteur de vues uniquement si le visiteur est eligible.
@@ -194,6 +211,11 @@ Tables principales:
 - `formations`
 - `modules`
 - `enrollments`
+
+Note schema `users`:
+
+- `prenom` et `contact` ont ete ajoutes via migration separee.
+- Ces colonnes sont `nullable` pour conserver la compatibilite des comptes existants.
 
 Commandes utiles:
 

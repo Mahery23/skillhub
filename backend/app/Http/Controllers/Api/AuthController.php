@@ -21,12 +21,14 @@ class AuthController extends Controller
     /**
      * Crée un utilisateur SkillHub puis retourne un token JWT.
      *
-     * @param  Request  $request  Données d'inscription attendues: name, email, password, role.
+     * @param  Request  $request  Données d'inscription attendues: prenom, nom, contact, email, password, role.
      */
     public function register(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:255'],
+            'prenom' => ['required', 'string', 'max:100'],
+            'nom' => ['required', 'string', 'max:100'],
+            'contact' => ['required', 'string', 'max:30', 'regex:/^\+?[0-9\s\-().]{8,20}$/'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
             'role' => ['required', 'in:apprenant,formateur'],
@@ -40,7 +42,9 @@ class AuthController extends Controller
         }
 
         $user = User::create([
-            'nom' => $request->string('name')->toString(),
+            'prenom' => $request->string('prenom')->toString(),
+            'nom' => $request->string('nom')->toString(),
+            'contact' => $request->string('contact')->toString(),
             'email' => $request->string('email')->toString(),
             'mot_de_passe' => $request->string('password')->toString(),
             'role' => $request->string('role')->toString(),
@@ -143,8 +147,10 @@ class AuthController extends Controller
 
         return [
             'id' => $user->id,
-            'name' => $user->nom,
+            'name' => trim(($user->prenom ?? '') . ' ' . ($user->nom ?? '')) ?: $user->nom,
+            'prenom' => $user->prenom,
             'nom' => $user->nom,
+            'contact' => $user->contact,
             'email' => $user->email,
             'role' => $user->role,
             'date_creation' => $user->date_creation,

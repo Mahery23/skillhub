@@ -29,10 +29,12 @@ function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant' }) 
         setFieldErrors([])
 
         const formData = new FormData(event.currentTarget)
-        const name = getFieldValue(formData, 'name').trim()
+        const prenom = getFieldValue(formData, 'prenom').trim()
+        const nom = getFieldValue(formData, 'nom').trim()
+        const contact = getFieldValue(formData, 'contact').trim()
         const email = getFieldValue(formData, 'email').trim().toLowerCase()
         const password = getFieldValue(formData, 'password')
-        const clientErrors = validateRegisterInput({ name, email, password, role })
+        const clientErrors = validateRegisterInput({ prenom, nom, contact, email, password, role })
 
         if (clientErrors.length > 0) {
             setFieldErrors(clientErrors)
@@ -42,7 +44,7 @@ function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant' }) 
         setIsLoading(true)
 
         try {
-            await onRegister({ name, email, password, role })
+            await onRegister({ prenom, nom, contact, email, password, role })
         } catch (submitError) {
             setError(mapApiError(submitError, 'register'))
             setFieldErrors(mapValidationErrors(submitError.details))
@@ -69,13 +71,34 @@ function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant' }) 
                         </div>
                     )}
                     <Form.Group className="mb-3">
-                        <Form.Label>Nom complet</Form.Label>
+                        <Form.Label>Prénom</Form.Label>
                         <Form.Control
-                            name="name"
+                            name="prenom"
                             type="text"
-                            placeholder="Jean Dupont"
+                            placeholder="Votre prénom"
                             minLength={2}
                             maxLength={80}
+                            required
+                        />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Nom</Form.Label>
+                        <Form.Control
+                            name="nom"
+                            type="text"
+                            placeholder="Votre nom"
+                            minLength={2}
+                            maxLength={80}
+                            required
+                        />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Téléphone</Form.Label>
+                        <Form.Control
+                            name="contact"
+                            type="tel"
+                            placeholder="06 12 34 56 78"
+                            maxLength={30}
                             required
                         />
                     </Form.Group>

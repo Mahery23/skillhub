@@ -5,7 +5,10 @@ const USER_KEY = 'skillhub_user'
 
 const normalizeUser = (rawUser = {}, fallback = {}) => ({
   id: rawUser.id || fallback.id || null,
-  name: rawUser.name || rawUser.nom || fallback.name || 'Utilisateur',
+  prenom: rawUser.prenom || fallback.prenom || '',
+  nom: rawUser.nom || fallback.nom || '',
+  contact: rawUser.contact || fallback.contact || '',
+  name: rawUser.name || [rawUser.prenom, rawUser.nom].filter(Boolean).join(' ') || fallback.name || 'Utilisateur',
   email: rawUser.email || fallback.email || '',
   role: rawUser.role || rawUser.role_name || fallback.role || 'apprenant',
 })
@@ -42,14 +45,21 @@ const loginWithApi = async ({ email, password }) => {
   return session
 }
 
-const registerWithApi = async ({ name, email, password, role }) => {
+const registerWithApi = async ({ prenom, nom, contact, email, password, role }) => {
   const payload = await apiRequest('/api/register', {
     method: 'POST',
-    body: JSON.stringify({ name, email, password, role }),
+    body: JSON.stringify({ prenom, nom, contact, email, password, role }),
   })
 
   const token = payload?.token || payload?.access_token
-  const user = normalizeUser(payload?.user, { name, email, role })
+  const user = normalizeUser(payload?.user, {
+    prenom,
+    nom,
+    contact,
+    name: [prenom, nom].filter(Boolean).join(' '),
+    email,
+    role,
+  })
 
   if (!token) {
     throw new Error('Token JWT manquant dans la reponse register.')

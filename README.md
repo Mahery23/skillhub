@@ -49,9 +49,15 @@ Fonctions coeur:
 - inscription/desinscription apprenant,
 - dashboard formateur,
 - dashboard apprenant,
-- validation client renforcee sur les formulaires critiques (auth, formations, modules),
+- validation client renforcee sur les formulaires critiques (auth, inscription, formations, modules),
 - compteur de vues backend avec exclusion du proprietaire + cooldown anti-refresh,
 - journalisation d'activites (MongoDB) pour audit technique.
+
+Regles d'inscription actuelles:
+
+- `prenom`, `nom` et `telephone` (champ `contact`) sont obligatoires pour les nouveaux comptes.
+- L'email reste l'identifiant principal de connexion et de contact.
+- Les comptes deja existants restent compatibles (colonnes ajoutees en base sans forcer de mise a jour immediate).
 
 ## 3. Architecture globale
 
@@ -247,12 +253,12 @@ URLs:
 Checklist de smoke test:
 
 1. Ouvrir `http://localhost:5173`.
-2. Creer un compte `formateur`.
+2. Creer un compte `formateur` avec `prenom`, `nom`, `telephone`, `email`, `mot de passe`.
 3. Creer une formation depuis le dashboard formateur.
 4. Ouvrir le bouton `Modules` de cette formation et ajouter un module.
 5. Modifier un module, puis verifier l'ordre et le contenu affiches sur `/formation/:id`.
 6. Supprimer un module (en respectant la regle backend de minimum 3 modules).
-7. Se deconnecter, creer un compte `apprenant`.
+7. Se deconnecter, creer un compte `apprenant` avec les memes champs obligatoires.
 8. S'inscrire a la formation.
 9. Verifier le dashboard apprenant.
 10. Verifier que `GET /api/formations` repond 200.

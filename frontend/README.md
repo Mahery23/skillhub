@@ -174,10 +174,21 @@ Le frontend applique une validation locale avant les appels API pour ameliorer l
 Regles principales en place:
 
 - Authentification: format email, mot de passe avec longueur minimale/maximale et complexite requise.
-- Inscription: controle du nom, de l'email, du role et du mot de passe.
+- Inscription:
+  - le prenom est obligatoire,
+  - le nom est obligatoire,
+  - le telephone est obligatoire (champ `contact`),
+  - l'email doit etre valide,
+  - le mot de passe doit respecter les regles de securite,
+  - le role doit etre explicite et limite aux valeurs attendues (`apprenant` ou `formateur`).
 - Dashboard formateur: validation des champs formation (titre, description) et modules (titre, contenu, ordre).
 
 Les messages de validation sont affiches dans les modales/formulaires avant envoi au backend.
+
+Contrat frontend/backend d'inscription:
+
+- Le frontend envoie: `prenom`, `nom`, `contact`, `email`, `password`, `role`.
+- Le backend retourne un utilisateur enrichi avec `name`, `prenom`, `nom`, `contact`.
 
 ## Gestion de session
 

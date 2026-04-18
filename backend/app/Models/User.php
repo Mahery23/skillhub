@@ -19,7 +19,9 @@ class User extends Authenticatable implements JWTSubject
     use HasFactory, Notifiable;
 
     protected $fillable = [
+        'prenom',
         'nom',
+        'contact',
         'email',
         'mot_de_passe',
         'role',
@@ -55,6 +57,7 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'role' => $this->role,
+            'prenom' => $this->prenom,
             'nom' => $this->nom,
         ];
     }

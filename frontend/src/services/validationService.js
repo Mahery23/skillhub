@@ -1,5 +1,6 @@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const NAME_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/
+const PHONE_REGEX = /^\+?[0-9\s\-().]{8,20}$/
 const TEXT_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s'".,!?():;\-/+&]+$/
 
 const normalizeText = (value) => (typeof value === 'string' ? value.trim() : '')
@@ -59,20 +60,40 @@ export const validateLoginInput = ({ email, password }) => {
   return errors
 }
 
-export const validateRegisterInput = ({ name, email, password, role }) => {
+export const validateRegisterInput = ({ prenom, nom, contact, email, password, role }) => {
   const errors = []
-  const safeName = normalizeText(name)
+  const safePrenom = normalizeText(prenom)
+  const safeNom = normalizeText(nom)
+  const safeContact = normalizeText(contact)
 
-  if (!safeName) {
+  if (!safePrenom) {
+    errors.push('Prénom obligatoire.')
+  } else {
+    if (safePrenom.length < 2 || safePrenom.length > 80) {
+      errors.push('Le prénom doit contenir entre 2 et 80 caractères.')
+    }
+
+    if (!NAME_REGEX.test(safePrenom)) {
+      errors.push('Le prénom contient des caractères non autorisés.')
+    }
+  }
+
+  if (!safeNom) {
     errors.push('Nom obligatoire.')
   } else {
-    if (safeName.length < 2 || safeName.length > 80) {
+    if (safeNom.length < 2 || safeNom.length > 80) {
       errors.push('Le nom doit contenir entre 2 et 80 caractères.')
     }
 
-    if (!NAME_REGEX.test(safeName)) {
+    if (!NAME_REGEX.test(safeNom)) {
       errors.push('Le nom contient des caractères non autorisés.')
     }
+  }
+
+  if (!safeContact) {
+    errors.push('Téléphone obligatoire.')
+  } else if (!PHONE_REGEX.test(safeContact)) {
+    errors.push('Numéro de téléphone invalide.')
   }
 
   validateEmail(normalizeText(email), errors)
