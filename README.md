@@ -49,6 +49,8 @@ Fonctions coeur:
 - inscription/desinscription apprenant,
 - dashboard formateur,
 - dashboard apprenant,
+- validation client renforcee sur les formulaires critiques (auth, formations, modules),
+- compteur de vues backend avec exclusion du proprietaire + cooldown anti-refresh,
 - journalisation d'activites (MongoDB) pour audit technique.
 
 ## 3. Architecture globale
@@ -68,6 +70,11 @@ Frontend React (Vite)  <----HTTP/JSON---->  Backend Laravel API  <---->  MySQL
 3. Laravel verifie JWT + role (`formateur` ou `apprenant`).
 4. Les donnees metier sont lues/ecrites dans MySQL.
 5. Les evenements metier importants sont logges dans MongoDB (`activity_logs`).
+
+Regles metier recentes:
+
+- Les formulaires frontend appliquent des regles de validation locales (format, longueur, caracteres autorises) avant l'appel API.
+- Sur `GET /api/formations/{formation}`, le backend n'incremente pas les vues pour le formateur proprietaire et applique un cooldown de 15 minutes par visiteur.
 
 ## 4. Stack technique
 
@@ -303,6 +310,11 @@ Une tache est consideree terminee si:
 - la doc impactee est mise a jour,
 - la PR est lisible et reviewable,
 - aucun secret n'est committe.
+
+### 12.3 Rappels qualite frontend/backend
+
+- Frontend: les erreurs de saisie doivent etre captees cote client avant soumission API (auth, creation/edition formations, modules).
+- Backend: les regles metier sensibles restent verifiees cote serveur (roles, proprietaire de formation, logique de vues).
 
 ## 13. Livrables Bloc 03 (rappel)
 

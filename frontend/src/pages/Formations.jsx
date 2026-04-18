@@ -181,8 +181,8 @@ function Formations() {
                             Par {f.formateur?.nom || 'SkillHub'}
                           </p>
                           <div className="sh-formation-meta">
-                            <span>👥 {f.apprenants ?? 0} apprenants</span>
-                            <span>👁 {f.vues ?? 0} vues</span>
+                            <span><i className="bi bi-people-fill me-1" aria-hidden="true" />{f.apprenants ?? 0} apprenants</span>
+                            <span><i className="bi bi-eye-fill me-1" aria-hidden="true" />{f.vues ?? 0} vues</span>
                           </div>
                           <Link to={`/formation/${f.id}`} className="sh-btn sh-btn--card-cta">
                             Voir le détail

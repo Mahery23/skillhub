@@ -161,7 +161,8 @@ function FormationDetail() {
                 className="small mb-3 d-inline-block"
                 style={{ color: 'var(--brand-soft)', textDecoration: 'none' }}
             >
-              ← Retour aux formations
+              <i className="bi bi-arrow-left me-1" aria-hidden="true" />
+              Retour aux formations
             </Link>
             <div className="d-flex align-items-center gap-2 mb-3">
             <span className="sh-cat-tag" style={{ background: 'rgba(255,255,255,0.1)', color: 'var(--brand-soft)' }}>
@@ -174,9 +175,9 @@ function FormationDetail() {
             <h1 className="sh-section-title--light mb-3">{formation.titre}</h1>
             <p className="sh-section-sub--light mb-4">{formation.description}</p>
             <div className="d-flex gap-4 flex-wrap" style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14 }}>
-              <span>👤 Formateur : <strong style={{ color: '#fff' }}>{formation.formateur?.nom || 'SkillHub'}</strong></span>
-              <span>👥 {formation.apprenants ?? 0} apprenants</span>
-              <span>👁 {formation.vues ?? 0} vues</span>
+              <span><i className="bi bi-person-badge-fill me-1" aria-hidden="true" />Formateur : <strong style={{ color: '#fff' }}>{formation.formateur?.nom || 'SkillHub'}</strong></span>
+              <span><i className="bi bi-people-fill me-1" aria-hidden="true" />{formation.apprenants ?? 0} apprenants</span>
+              <span><i className="bi bi-eye-fill me-1" aria-hidden="true" />{formation.vues ?? 0} vues</span>
             </div>
           </div>
         </section>

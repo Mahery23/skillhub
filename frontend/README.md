@@ -15,6 +15,7 @@ Application frontend de SkillHub: interface apprenant/formateur, navigation, mod
 - [Roles et responsabilites](#roles-et-responsabilites)
 - [Gestion des modules formateur](#gestion-des-modules-formateur)
 - [Services API](#services-api)
+- [Validation client](#validation-client)
 - [Gestion de session](#gestion-de-session)
 - [Conventions equipe](#conventions-equipe)
 - [Depannage](#depannage)
@@ -24,6 +25,7 @@ Application frontend de SkillHub: interface apprenant/formateur, navigation, mod
 - React 19
 - React Router
 - React Bootstrap + Bootstrap 5
+- Bootstrap Icons
 - Vite 8
 - ESLint
 
@@ -158,11 +160,24 @@ Fichiers principaux:
 
 - `src/services/apiClient.js` : requetes HTTP, headers communs, gestion erreurs
 - `src/services/apiErrorMapper.js` : mapping erreurs API -> messages UX
+- `src/services/validationService.js` : regles de validation client (auth, formations, modules)
 - `src/services/authService.js` : login, register, profile, logout
 - `src/services/formationService.js` : catalogue + detail + modules
 - `src/services/trainerService.js` : CRUD formateur
 - `src/services/moduleService.js` : CRUD modules formateur (`getFormationModules`, `createModule`, `updateModule`, `deleteModule`)
 - `src/services/enrollmentService.js` : inscriptions apprenant
+
+## Validation client
+
+Le frontend applique une validation locale avant les appels API pour ameliorer le feedback utilisateur.
+
+Regles principales en place:
+
+- Authentification: format email, mot de passe avec longueur minimale/maximale et complexite requise.
+- Inscription: controle du nom, de l'email, du role et du mot de passe.
+- Dashboard formateur: validation des champs formation (titre, description) et modules (titre, contenu, ordre).
+
+Les messages de validation sont affiches dans les modales/formulaires avant envoi au backend.
 
 ## Gestion de session
 

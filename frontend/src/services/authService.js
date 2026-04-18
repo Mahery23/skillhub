@@ -1,9 +1,7 @@
-import { API_BASE_URL, apiRequest } from './apiClient'
+import { apiRequest } from './apiClient'
 
 const TOKEN_KEY = 'skillhub_token'
 const USER_KEY = 'skillhub_user'
-
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const normalizeUser = (rawUser = {}, fallback = {}) => ({
   id: rawUser.id || fallback.id || null,
@@ -63,31 +61,6 @@ const registerWithApi = async ({ name, email, password, role }) => {
   return session
 }
 
-const loginWithMock = async ({ email, role }) => {
-  await wait(400)
-
-  const user = normalizeUser({
-    name: email ? email.split('@')[0] : 'Utilisateur',
-    email,
-    role,
-  })
-
-  const session = { token: 'mock-token', user, mode: 'mock' }
-  saveSession(session)
-
-  return session
-}
-
-const registerWithMock = async ({ name, email, role }) => {
-  await wait(400)
-
-  const user = normalizeUser({ name, email, role })
-  const session = { token: 'mock-token', user, mode: 'mock' }
-  saveSession(session)
-
-  return session
-}
-
 export const getStoredUser = () => {
   const rawUser = localStorage.getItem(USER_KEY)
 
@@ -112,10 +85,6 @@ export const getProfile = async () => {
     return null
   }
 
-  if (!API_BASE_URL || token === 'mock-token') {
-    return getStoredUser()
-  }
-
   const payload = await apiRequest('/api/profile', {
     headers: { Authorization: `Bearer ${token}` },
   })
@@ -126,29 +95,9 @@ export const getProfile = async () => {
   return user
 }
 
-export const login = async (credentials) => {
-  try {
-    return await loginWithApi(credentials)
-  } catch (error) {
-    if (API_BASE_URL) {
-      throw error
-    }
+export const login = async (credentials) => loginWithApi(credentials)
 
-    return loginWithMock(credentials)
-  }
-}
-
-export const register = async (payload) => {
-  try {
-    return await registerWithApi(payload)
-  } catch (error) {
-    if (API_BASE_URL) {
-      throw error
-    }
-
-    return registerWithMock(payload)
-  }
-}
+export const register = async (payload) => registerWithApi(payload)
 
 export const logout = () => {
   clearSession()

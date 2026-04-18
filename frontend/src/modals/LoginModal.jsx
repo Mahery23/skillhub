@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
 import { Modal, Button, Form } from 'react-bootstrap'
 import { mapApiError, mapValidationErrors } from '../services/apiErrorMapper'
+import { validateLoginInput } from '../services/validationService'
 
 const getFieldValue = (formData, key) => {
     const value = formData.get(key)
@@ -24,11 +25,18 @@ function LoginModal({ show, onHide, onLogin }) {
         event.preventDefault()
         setError('')
         setFieldErrors([])
-        setIsLoading(true)
 
         const formData = new FormData(event.currentTarget)
         const email = getFieldValue(formData, 'email').trim().toLowerCase()
         const password = getFieldValue(formData, 'password')
+        const clientErrors = validateLoginInput({ email, password })
+
+        if (clientErrors.length > 0) {
+            setFieldErrors(clientErrors)
+            return
+        }
+
+        setIsLoading(true)
 
         try {
             await onLogin({ email, password })
@@ -59,11 +67,11 @@ function LoginModal({ show, onHide, onLogin }) {
                     )}
                     <Form.Group className="mb-3">
                         <Form.Label>Email</Form.Label>
-                        <Form.Control name="email" type="email" placeholder="votre@email.com" required />
+                        <Form.Control name="email" type="email" placeholder="votre@email.com" maxLength={120} required />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Mot de passe</Form.Label>
-                        <Form.Control name="password" type="password" placeholder="********" required />
+                        <Form.Control name="password" type="password" placeholder="********" minLength={8} maxLength={64} required />
                     </Form.Group>
                     <Button variant="primary" className="w-100" type="submit" disabled={isLoading}>
                         {isLoading ? 'Connexion...' : 'Se connecter'}

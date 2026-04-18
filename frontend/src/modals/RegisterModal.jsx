@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
 import { Modal, Button, Form } from 'react-bootstrap'
 import { mapApiError, mapValidationErrors } from '../services/apiErrorMapper'
+import { validateRegisterInput } from '../services/validationService'
 
 const getFieldValue = (formData, key) => {
     const value = formData.get(key)
@@ -26,12 +27,19 @@ function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant' }) 
         event.preventDefault()
         setError('')
         setFieldErrors([])
-        setIsLoading(true)
 
         const formData = new FormData(event.currentTarget)
-        const name = getFieldValue(formData, 'name').trim() || 'Utilisateur'
+        const name = getFieldValue(formData, 'name').trim()
         const email = getFieldValue(formData, 'email').trim().toLowerCase()
         const password = getFieldValue(formData, 'password')
+        const clientErrors = validateRegisterInput({ name, email, password, role })
+
+        if (clientErrors.length > 0) {
+            setFieldErrors(clientErrors)
+            return
+        }
+
+        setIsLoading(true)
 
         try {
             await onRegister({ name, email, password, role })
@@ -62,15 +70,22 @@ function RegisterModal({ show, onHide, onRegister, defaultRole = 'apprenant' }) 
                     )}
                     <Form.Group className="mb-3">
                         <Form.Label>Nom complet</Form.Label>
-                        <Form.Control name="name" type="text" placeholder="Jean Dupont" required />
+                        <Form.Control
+                            name="name"
+                            type="text"
+                            placeholder="Jean Dupont"
+                            minLength={2}
+                            maxLength={80}
+                            required
+                        />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Email</Form.Label>
-                        <Form.Control name="email" type="email" placeholder="votre@email.com" required />
+                        <Form.Control name="email" type="email" placeholder="votre@email.com" maxLength={120} required />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Mot de passe</Form.Label>
-                        <Form.Control name="password" type="password" placeholder="********" required />
+                        <Form.Control name="password" type="password" placeholder="********" minLength={8} maxLength={64} required />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Je suis</Form.Label>

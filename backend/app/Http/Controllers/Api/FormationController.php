@@ -7,6 +7,7 @@ use App\Models\Formation;
 use App\Services\ActivityLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Gère les endpoints API des formations SkillHub.
@@ -16,6 +17,8 @@ use Illuminate\Http\Request;
  */
 class FormationController extends Controller
 {
+    private const VIEW_COOLDOWN_MINUTES = 15;
+
     private const CATEGORIES = [
         'Développement web',
         'Data',
@@ -66,14 +69,40 @@ class FormationController extends Controller
     /**
      * Affiche une formation et incrémente son compteur de vues.
      */
-    public function show(Formation $formation): JsonResponse
+    public function show(Request $request, Formation $formation): JsonResponse
     {
-        $formation->increment('nombre_de_vues');
+        if ($this->shouldIncrementViews($formation, $request)) {
+            $formation->increment('nombre_de_vues');
+        }
+
         $formation->refresh()->load(['formateur:id,nom', 'modules:id,formation_id,titre,contenu,ordre,date_creation'])->loadCount('inscriptions');
 
         return response()->json([
             'formation' => $this->formatFormation($formation, true),
         ]);
+    }
+
+    /**
+     * Détermine si la consultation doit incrémenter le compteur de vues.
+     *
+     * Le formateur propriétaire ne doit pas augmenter ses propres statistiques.
+     */
+    private function shouldIncrementViews(Formation $formation, Request $request): bool
+    {
+        $user = auth('api')->user();
+
+        if ($user && (int) $user->id === (int) $formation->formateur_id) {
+            return false;
+        }
+
+        $viewerKey = $user
+            ? 'user:' . $user->id
+            : 'guest:' . sha1(($request->ip() ?? 'unknown') . '|' . ($request->userAgent() ?? 'unknown'));
+
+        $cacheKey = sprintf('formation:%d:view:%s', $formation->id, $viewerKey);
+
+        // Incrémente au plus une fois par visiteur sur la fenêtre de cooldown.
+        return Cache::add($cacheKey, true, now()->addMinutes(self::VIEW_COOLDOWN_MINUTES));
     }
 
     /**

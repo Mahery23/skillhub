@@ -82,7 +82,8 @@ function SuiviFormation({ user }) {
       <section className="sh-section--dark py-4">
         <div className="container">
           <Link to="/dashboard/apprenant" className="small mb-3 d-inline-block" style={{ color: 'var(--brand-soft)', textDecoration: 'none' }}>
-            ← Retour au dashboard
+            <i className="bi bi-arrow-left me-1" aria-hidden="true" />
+            Retour au dashboard
           </Link>
           <h1 className="sh-section-title--light mb-2">{formation.titre}</h1>
           <p className="sh-section-sub--light mb-3">{formation.description}</p>
@@ -138,7 +139,7 @@ function SuiviFormation({ user }) {
                           color: estTermine ? 'var(--green-text)' : estActif ? '#fff' : 'var(--text-muted)',
                         }}
                       >
-                        {estTermine ? '✓' : module.ordre}
+                        {estTermine ? <i className="bi bi-check-lg" aria-hidden="true" /> : module.ordre}
                       </div>
                       <span style={{ fontSize: 13, fontWeight: estActif ? 600 : 400, color: estActif ? 'var(--brand-deep)' : 'var(--text-secondary)' }}>
                         {module.titre}
@@ -178,10 +179,12 @@ function SuiviFormation({ user }) {
                 <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
                   <div className="d-flex gap-2">
                     <button className="sh-btn sh-btn--outline" style={{ fontSize: 13 }} disabled={moduleActif === 0} onClick={() => setModuleActif((prev) => prev - 1)}>
-                      ← Précédent
+                      <i className="bi bi-arrow-left me-1" aria-hidden="true" />
+                      Précédent
                     </button>
                     <button className="sh-btn sh-btn--outline" style={{ fontSize: 13 }} disabled={moduleActif === modules.length - 1} onClick={() => setModuleActif((prev) => prev + 1)}>
-                      Suivant →
+                      Suivant
+                      <i className="bi bi-arrow-right ms-1" aria-hidden="true" />
                     </button>
                   </div>
 
@@ -195,7 +198,12 @@ function SuiviFormation({ user }) {
                     }}
                     onClick={() => toggleTermine(moduleCourant.ordre)}
                   >
-                    {modulesTermines.includes(moduleCourant.ordre) ? '✓ Terminé' : 'Marquer comme terminé'}
+                    {modulesTermines.includes(moduleCourant.ordre) ? (
+                      <>
+                        <i className="bi bi-check-circle-fill me-1" aria-hidden="true" />
+                        Terminé
+                      </>
+                    ) : 'Marquer comme terminé'}
                   </button>
                 </div>
               </div>

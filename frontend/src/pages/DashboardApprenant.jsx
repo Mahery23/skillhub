@@ -200,7 +200,7 @@ function DashboardApprenant({ user }) {
             <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
               <div>
                 <h1 className="sh-section-title--light mb-1">
-                  Bonjour, {user.nom || user.email} 👋
+                  Bonjour, {user.nom || user.email}
                 </h1>
                 <p className="sh-section-sub--light">
                   Suivez vos formations et gérez vos inscriptions

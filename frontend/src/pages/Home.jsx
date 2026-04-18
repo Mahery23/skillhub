@@ -23,9 +23,9 @@ const stats = [
 ]
 
 const valeurs = [
-    { icon: '◈', titre: 'Accessibilité', desc: 'Toutes les formations sont gratuites et accessibles à tous, sans exception.' },
-    { icon: '◉', titre: 'Communauté',    desc: 'Un espace collaboratif où chacun peut apprendre et partager ses compétences.' },
-    { icon: '◆', titre: 'Excellence',    desc: 'Des contenus de qualité créés par des formateurs passionnés et experts.' },
+    { icon: 'bi bi-universal-access-circle', titre: 'Accessibilité', desc: 'Toutes les formations sont gratuites et accessibles à tous, sans exception.' },
+    { icon: 'bi bi-people-fill',             titre: 'Communauté',    desc: 'Un espace collaboratif où chacun peut apprendre et partager ses compétences.' },
+    { icon: 'bi bi-award-fill',              titre: 'Excellence',    desc: 'Des contenus de qualité créés par des formateurs passionnés et experts.' },
 ]
 
 const normalizeFormationsPayload = (payload) => {
@@ -105,8 +105,8 @@ function Home(props) {
                                 <h6 className="sh-formation-title">{formation.titre}</h6>
                                 <p className="sh-formation-desc">{formatDescription(formation)}</p>
                                 <div className="sh-formation-meta">
-                                    <span>👥 {formation.apprenants ?? 0} apprenants</span>
-                                    <span>👁 {formation.vues ?? 0} vues</span>
+                                    <span><i className="bi bi-people-fill me-1" aria-hidden="true" />{formation.apprenants ?? 0} apprenants</span>
+                                    <span><i className="bi bi-eye-fill me-1" aria-hidden="true" />{formation.vues ?? 0} vues</span>
                                 </div>
                                 <Link to={`/formation/${formation.id}`} className="sh-btn sh-btn--card-cta">
                                     Voir le détail
@@ -241,7 +241,7 @@ function Home(props) {
                         <div className="row g-4">
                             <div className="col-md-6">
                                 <div className="sh-role-card sh-role-card--apprenant">
-                                    <div className="sh-role-icon">◎</div>
+                                    <div className="sh-role-icon"><i className="bi bi-mortarboard-fill" aria-hidden="true" /></div>
                                     <h5 className="sh-role-title">Je suis apprenant</h5>
                                     <p className="sh-role-desc">Accédez gratuitement à toutes les formations et suivez votre progression module par module.</p>
                                     <button className="sh-btn sh-btn--primary mt-3" onClick={() => onOpenRegister('apprenant')}>
@@ -251,7 +251,7 @@ function Home(props) {
                             </div>
                             <div className="col-md-6">
                                 <div className="sh-role-card sh-role-card--formateur">
-                                    <div className="sh-role-icon">◈</div>
+                                    <div className="sh-role-icon"><i className="bi bi-easel2-fill" aria-hidden="true" /></div>
                                     <h5 className="sh-role-title">Je suis formateur</h5>
                                     <p className="sh-role-desc">Créez vos formations, gérez vos modules et partagez votre expertise avec votre communauté.</p>
                                     <button className="sh-btn sh-btn--outline-dark mt-3" onClick={() => onOpenRegister('formateur')}>
@@ -298,7 +298,10 @@ function Home(props) {
                             <h2 className="sh-section-title">Formations à la une</h2>
                             <p className="sh-section-sub">Les formations les plus suivies du moment</p>
                         </div>
-                        <Link to="/formations" className="sh-link-more">Voir toutes →</Link>
+                        <Link to="/formations" className="sh-link-more">
+                            Voir toutes
+                            <i className="bi bi-arrow-right ms-1" aria-hidden="true" />
+                        </Link>
                     </div>
                     {featuredFormationsContent}
                 </div>
@@ -315,7 +318,7 @@ function Home(props) {
                         {valeurs.map(v => (
                             <div className="col-md-4" key={v.titre}>
                                 <div className="sh-valeur-card">
-                                    <div className="sh-valeur-icon">{v.icon}</div>
+                                    <div className="sh-valeur-icon"><i className={v.icon} aria-hidden="true" /></div>
                                     <h6 className="sh-valeur-title">{v.titre}</h6>
                                     <p className="sh-valeur-desc">{v.desc}</p>
                                 </div>
@@ -336,7 +339,13 @@ function Home(props) {
                         {temoignages.map(t => (
                             <div className="col-md-4" key={t.nom}>
                                 <div className="sh-temoignage-card">
-                                    <div className="sh-temoignage-stars">★★★★★</div>
+                                    <div className="sh-temoignage-stars" aria-label="5 étoiles">
+                                        <i className="bi bi-star-fill" aria-hidden="true" />
+                                        <i className="bi bi-star-fill" aria-hidden="true" />
+                                        <i className="bi bi-star-fill" aria-hidden="true" />
+                                        <i className="bi bi-star-fill" aria-hidden="true" />
+                                        <i className="bi bi-star-fill" aria-hidden="true" />
+                                    </div>
                                     <p className="sh-temoignage-texte">"{t.texte}"</p>
                                     <div className="sh-temoignage-author">
                                         <div className="sh-avatar">{t.initiales}</div>

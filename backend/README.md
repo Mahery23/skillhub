@@ -16,6 +16,7 @@ Backend API de SkillHub: authentification JWT, catalogue de formations, modules,
 - [Roles et responsabilites](#roles-et-responsabilites)
 - [Base de donnees et migrations](#base-de-donnees-et-migrations)
 - [MongoDB et logs d'activite](#mongodb-et-logs-dactivite)
+- [Regle compteur de vues](#regle-compteur-de-vues)
 - [Tests et qualite](#tests-et-qualite)
 - [Documentation API (OpenAPI)](#documentation-api-openapi)
 - [Depannage](#depannage)
@@ -122,6 +123,12 @@ Public:
 - `GET /api/formations`
 - `GET /api/formations/{formation}`
 - `GET /api/formations/{formation}/modules`
+
+Note metier sur `GET /api/formations/{formation}`:
+
+- Incremente le compteur de vues uniquement si le visiteur est eligible.
+- Le formateur proprietaire de la formation n'augmente pas ses propres vues.
+- Un cooldown de 15 minutes par visiteur est applique pour eviter les increments en rafraichissement rapide.
 
 Protegees JWT:
 
@@ -275,6 +282,19 @@ Si la collection n'apparait pas encore, c'est souvent parce qu'aucun evenement n
 mongosh "mongodb://127.0.0.1:27017/skillhub_logs" --eval "db.activity_logs.countDocuments()"
 mongosh "mongodb://127.0.0.1:27017/skillhub_logs" --eval "db.activity_logs.find().sort({_id:-1}).limit(5)"
 ```
+
+## Regle compteur de vues
+
+La logique est implementee dans `app/Http/Controllers/Api/FormationController.php`.
+
+Comportement attendu:
+
+- Le formateur proprietaire qui consulte sa propre formation: **pas d'increment**.
+- Un autre utilisateur (apprenant, autre formateur): **increment possible**.
+- Visiteur non connecte: **increment possible**.
+- Cooldown anti-refresh: **1 increment max par visiteur et par formation sur 15 minutes**.
+
+Objectif: conserver un indicateur de consultation plus fiable et limiter les gonflements artificiels du compteur.
 
 ## Tests et qualite
 

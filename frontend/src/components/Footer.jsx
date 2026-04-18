@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom'
 
 function Footer() {
+    const socialLinks = [
+        { label: 'X (Twitter)', icon: 'bi bi-twitter-x', href: '#' },
+        { label: 'LinkedIn', icon: 'bi bi-linkedin', href: '#' },
+        { label: 'Instagram', icon: 'bi bi-instagram', href: '#' },
+    ]
+
     return (
         <footer className="py-5 home-footer" style={{ background: '#26215C' }}>
             <div className="container">
@@ -11,8 +17,22 @@ function Footer() {
                             La plateforme collaborative qui met en relation formateurs et apprenants autour de formations en ligne de qualité.
                         </p>
                         <div className="d-flex gap-2 mt-3">
-                            {['Twitter', 'LinkedIn', 'Instagram'].map(r => (
-                                <span key={r} className="badge rounded-2 px-2 py-1" style={{ background: '#3C3489', color: '#AFA9EC', fontSize: 11 }}>{r}</span>
+                            {socialLinks.map((item) => (
+                                <a
+                                    key={item.label}
+                                    href={item.href}
+                                    aria-label={item.label}
+                                    className="d-inline-flex align-items-center justify-content-center rounded-2"
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        background: '#3C3489',
+                                        color: '#AFA9EC',
+                                        textDecoration: 'none',
+                                    }}
+                                >
+                                    <i className={item.icon} aria-hidden="true" />
+                                </a>
                             ))}
                         </div>
                     </div>

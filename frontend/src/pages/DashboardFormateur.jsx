@@ -5,6 +5,7 @@ import { Modal, Button, Form } from 'react-bootstrap'
 import { createFormation, deleteFormation, getMyFormations, updateFormation } from '../services/trainerService'
 import { createModule, deleteModule, getFormationModules, updateModule } from '../services/moduleService'
 import { mapApiError } from '../services/apiErrorMapper'
+import { validateFormationInput, validateModuleInput } from '../services/validationService'
 
 const NIVEAUX = ['Débutant', 'Intermédiaire', 'Avancé']
 const CATEGORIES = ['Développement web', 'DevOps', 'Design', 'Data', 'Marketing']
@@ -113,7 +114,10 @@ function DashboardFormateur({ user }) {
   }
 
   const sauvegarder = async () => {
-    if (!formData.titre.trim() || !formData.description.trim()) {
+    const formationErrors = validateFormationInput(formData)
+
+    if (formationErrors.length > 0) {
+      setActionError(formationErrors[0])
       return
     }
 
@@ -124,11 +128,15 @@ function DashboardFormateur({ user }) {
       if (formationEnCours) {
         await updateFormation(formationEnCours.id, {
           ...formData,
+          titre: formData.titre.trim(),
+          description: formData.description.trim(),
           categorie: sanitizeCategorie(formData.categorie),
         })
       } else {
         await createFormation({
           ...formData,
+          titre: formData.titre.trim(),
+          description: formData.description.trim(),
           categorie: sanitizeCategorie(formData.categorie),
         })
       }
@@ -198,7 +206,10 @@ function DashboardFormateur({ user }) {
   }
 
   const sauvegarderModule = async () => {
-    if (!moduleEnCours?.titre?.trim() || !moduleEnCours?.contenu?.trim() || !moduleEnCours?.ordre) {
+    const moduleErrors = validateModuleInput(moduleEnCours || {})
+
+    if (moduleErrors.length > 0) {
+      setModuleError(moduleErrors[0])
       return
     }
 
@@ -207,9 +218,9 @@ function DashboardFormateur({ user }) {
       setModuleError('')
 
       const data = {
-        titre: moduleEnCours.titre,
-        contenu: moduleEnCours.contenu,
-        ordre: moduleEnCours.ordre,
+        titre: moduleEnCours.titre.trim(),
+        contenu: moduleEnCours.contenu.trim(),
+        ordre: Number(moduleEnCours.ordre),
       }
 
       if (moduleEnCours.id) {
@@ -305,8 +316,8 @@ function DashboardFormateur({ user }) {
                 <h6 className="sh-formation-title">{formation.titre}</h6>
                 <p className="sh-formation-desc">{formation.description}</p>
                 <div className="sh-formation-meta">
-                  <span>👥 {formation.apprenants} apprenants</span>
-                  <span>👁 {formation.vues} vues</span>
+                  <span><i className="bi bi-people-fill me-1" aria-hidden="true" />{formation.apprenants} apprenants</span>
+                  <span><i className="bi bi-eye-fill me-1" aria-hidden="true" />{formation.vues} vues</span>
                 </div>
                 <div className="d-flex gap-2 mt-2">
                   <Link
@@ -352,7 +363,7 @@ function DashboardFormateur({ user }) {
         <div className="container">
           <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-              <h1 className="sh-section-title--light mb-1">Bonjour, {user.nom || user.email} 👋</h1>
+              <h1 className="sh-section-title--light mb-1">Bonjour, {user.nom || user.email}</h1>
               <p className="sh-section-sub--light">Gérez vos formations et suivez vos apprenants</p>
             </div>
             <button className="sh-btn sh-btn--white" onClick={ouvrirCreation}>
@@ -410,6 +421,8 @@ function DashboardFormateur({ user }) {
                 placeholder="Titre de la formation"
                 value={formData.titre}
                 onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
+                minLength={3}
+                maxLength={120}
               />
             </Form.Group>
             <Form.Group className="mb-3">
@@ -449,6 +462,8 @@ function DashboardFormateur({ user }) {
                 placeholder="Description de la formation"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                minLength={20}
+                maxLength={2000}
               />
             </Form.Group>
           </Form>
@@ -536,7 +551,7 @@ function DashboardFormateur({ user }) {
                               onClick={() => ouvrirModificationModule(module)}
                               disabled={isSaving}
                             >
-                              ✏️
+                              <i className="bi bi-pencil-square" aria-hidden="true" />
                             </button>
                             <button
                               className="sh-btn"
@@ -550,7 +565,7 @@ function DashboardFormateur({ user }) {
                               onClick={() => demanderSuppressionModule(module)}
                               disabled={isSaving}
                             >
-                              🗑️
+                              <i className="bi bi-trash" aria-hidden="true" />
                             </button>
                           </div>
                         </div>
@@ -597,6 +612,8 @@ function DashboardFormateur({ user }) {
                       placeholder="Titre du module"
                       value={moduleEnCours?.titre || ''}
                       onChange={(e) => setModuleEnCours({ ...moduleEnCours, titre: e.target.value })}
+                      minLength={3}
+                      maxLength={120}
                     />
                   </Form.Group>
 
@@ -611,6 +628,8 @@ function DashboardFormateur({ user }) {
                       placeholder="Contenu du module (description, objectifs, ressources, etc.)"
                       value={moduleEnCours?.contenu || ''}
                       onChange={(e) => setModuleEnCours({ ...moduleEnCours, contenu: e.target.value })}
+                      minLength={20}
+                      maxLength={5000}
                     />
                     <small className="text-muted d-block mt-1">
                       {(moduleEnCours?.contenu || '').length} caractères
