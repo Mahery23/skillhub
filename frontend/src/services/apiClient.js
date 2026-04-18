@@ -1,4 +1,22 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+const SHOULD_LOG_API_ERRORS = import.meta.env.DEV || import.meta.env.VITE_DEBUG_API === 'true'
+
+const logApiError = ({ type, path, method, status, message, payload }) => {
+  if (!SHOULD_LOG_API_ERRORS) {
+    return
+  }
+
+  console.error('[SkillHub API Error]', {
+    type,
+    method,
+    path,
+    url: buildUrl(path),
+    status: status ?? null,
+    message,
+    payload: payload ?? null,
+    timestamp: new Date().toISOString(),
+  })
+}
 
 const buildUrl = (path) => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
@@ -26,6 +44,7 @@ export const apiRequest = async (path, options = {}) => {
   }
 
   const { headers: customHeaders = {}, ...restOptions } = options
+  const method = typeof restOptions?.method === 'string' ? restOptions.method.toUpperCase() : 'GET'
 
   let response
 
@@ -41,6 +60,13 @@ export const apiRequest = async (path, options = {}) => {
   } catch {
     const networkError = new Error('Failed to fetch')
     networkError.status = 0
+    logApiError({
+      type: 'network',
+      path,
+      method,
+      status: 0,
+      message: networkError.message,
+    })
     throw networkError
   }
 
@@ -49,6 +75,14 @@ export const apiRequest = async (path, options = {}) => {
   if (response.redirected) {
     const redirectError = new Error('Redirection inattendue détectée. Veuillez vous reconnecter.')
     redirectError.status = response.status || 0
+    logApiError({
+      type: 'redirect',
+      path,
+      method,
+      status: redirectError.status,
+      message: redirectError.message,
+      payload,
+    })
     throw redirectError
   }
 
@@ -65,6 +99,14 @@ export const apiRequest = async (path, options = {}) => {
     }
 
     error.status = response.status
+    logApiError({
+      type: 'http',
+      path,
+      method,
+      status: error.status,
+      message: error.message,
+      payload,
+    })
     throw error
   }
 
