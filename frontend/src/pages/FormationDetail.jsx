@@ -1,9 +1,9 @@
-
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { getFormation, getFormationModules } from '../services/formationService'
 import { getStoredUser } from '../services/authService'
-import { enrollInFormation, getMyFormations } from '../services/enrollmentService'
+import { enrollInFormation, getMyFormations, unenrollFromFormation } from '../services/enrollmentService'
+import { Modal, Button } from 'react-bootstrap'
 
 const niveauConfig = {
   debutant: { cls: 'sh-badge-green' },
@@ -25,7 +25,15 @@ function FormationDetail() {
   const [isAlreadyEnrolled, setIsAlreadyEnrolled] = useState(false)
   const [checkingEnrollment, setCheckingEnrollment] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
+  const [unfollowLoading, setUnfollowLoading] = useState(false)
   const [followError, setFollowError] = useState('')
+  const [followSuccess, setFollowSuccess] = useState('')
+  const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false)
+
+  const refreshCurrentPage = () => {
+    // Force une actualisation pour recharger l'etat depuis l'API.
+    globalThis.location.reload()
+  }
 
   const niveauKey = (formation?.niveau || '').toLowerCase().normalize('NFD').replaceAll(/\p{Diacritic}/gu, '')
 
@@ -131,10 +139,17 @@ function FormationDetail() {
           setFollowLoading(true)
           await enrollInFormation(formation.id)
           setIsAlreadyEnrolled(true)
-          navigate(`/apprendre/${formation.id}`)
+          setFollowSuccess('Inscription reussie. Actualisation en cours...')
+          globalThis.setTimeout(() => {
+            refreshCurrentPage()
+          }, 1200)
         } catch (followRequestError) {
           if (followRequestError?.status === 409) {
             setIsAlreadyEnrolled(true)
+            setFollowSuccess('Cette formation est deja suivie. Actualisation en cours...')
+            globalThis.setTimeout(() => {
+              refreshCurrentPage()
+            }, 1200)
             return
           }
 
@@ -149,6 +164,33 @@ function FormationDetail() {
     }
 
     navigate('/')
+  }
+
+  const handleNePlusSuivre = () => {
+    if (!user || user.role !== 'apprenant') {
+      return
+    }
+
+    setShowUnfollowConfirm(true)
+  }
+
+  const confirmerNePlusSuivre = async () => {
+    try {
+      setFollowError('')
+      setFollowSuccess('')
+      setUnfollowLoading(true)
+      await unenrollFromFormation(formation.id)
+      setIsAlreadyEnrolled(false)
+      setShowUnfollowConfirm(false)
+      setFollowSuccess('Desinscription reussie. Actualisation en cours...')
+      globalThis.setTimeout(() => {
+        refreshCurrentPage()
+      }, 1200)
+    } catch (unfollowRequestError) {
+      setFollowError(unfollowRequestError?.message || 'Impossible de se desinscrire pour le moment.')
+    } finally {
+      setUnfollowLoading(false)
+    }
   }
 
   return (
@@ -270,19 +312,28 @@ function FormationDetail() {
                       )}
 
                       {user?.role === 'apprenant' && !checkingEnrollment && isAlreadyEnrolled && (
-                        <div
-                          className="text-center w-100"
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: 'var(--green-text)',
-                            background: 'var(--green-bg)',
-                            borderRadius: '999px',
-                            padding: '10px 14px',
-                          }}
-                        >
-                          Déjà suivie
-                        </div>
+                        <>
+                          <div
+                            className="text-center w-100"
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: 'var(--green-text)',
+                              background: 'var(--green-bg)',
+                              borderRadius: '999px',
+                              padding: '10px 14px',
+                            }}
+                          >
+                            Deja suivie
+                          </div>
+                          <button
+                            className="sh-btn sh-btn--outline w-100 mt-2"
+                            onClick={handleNePlusSuivre}
+                            disabled={unfollowLoading}
+                          >
+                            {unfollowLoading ? 'Desinscription...' : 'Ne plus suivre'}
+                          </button>
+                        </>
                       )}
 
                       {(!user || (user?.role === 'apprenant' && !checkingEnrollment && !isAlreadyEnrolled)) && (
@@ -294,6 +345,12 @@ function FormationDetail() {
                       {followError && (
                         <p className="text-center mt-2 mb-0" style={{ fontSize: 11, color: 'var(--red-text)' }}>
                           {followError}
+                        </p>
+                      )}
+
+                      {followSuccess && (
+                        <p className="text-center mt-2 mb-0" style={{ fontSize: 11, color: 'var(--green-text)' }}>
+                          {followSuccess}
                         </p>
                       )}
 
@@ -310,9 +367,25 @@ function FormationDetail() {
             </div>
           </div>
         </section>
+
+        <Modal show={showUnfollowConfirm} onHide={() => setShowUnfollowConfirm(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Confirmation</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            Etes-vous sur de vouloir ne plus suivre cette formation ?
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="outline-secondary" onClick={() => setShowUnfollowConfirm(false)} disabled={unfollowLoading}>
+              Annuler
+            </Button>
+            <Button variant="danger" onClick={confirmerNePlusSuivre} disabled={unfollowLoading}>
+              {unfollowLoading ? 'Desinscription...' : 'Confirmer'}
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </div>
   )
 }
 
 export default FormationDetail
-
