@@ -51,6 +51,21 @@ const normalizeUser = (rawUser = {}, fallback = {}) => ({
   role: sanitizeRole(rawUser.role || rawUser.role_name || fallback.role),
 })
 
+// Construit un payload dont TOUS les champs ressortent a nouveau des
+// sanitizers juste avant l ecriture. Meme si `user` vient deja de
+// normalizeUser, on re-sanitize a la frontiere du sink localStorage pour
+// que l analyse taint de SonarCloud voit un chemin sanitize explicite
+// (regle jssecurity:S8475 "Browser storage should not be poisoned").
+const buildSafeUserPayload = (user = {}) => ({
+  id: sanitizeId(user.id),
+  prenom: sanitizeString(user.prenom),
+  nom: sanitizeString(user.nom),
+  contact: sanitizeString(user.contact),
+  name: sanitizeString(user.name),
+  email: sanitizeString(user.email),
+  role: sanitizeRole(user.role),
+})
+
 const saveSession = ({ token, user }) => {
   // Validation AVANT ecriture dans browser storage (Sonar jssecurity:S8475).
   const safeToken = sanitizeToken(token)
@@ -58,8 +73,10 @@ const saveSession = ({ token, user }) => {
     localStorage.setItem(TOKEN_KEY, safeToken)
   }
 
-  // user est deja passe par normalizeUser, tous les champs sont sanitizes.
-  localStorage.setItem(USER_KEY, JSON.stringify(user))
+  // Re-sanitize juste avant l ecriture pour que l analyse statique
+  // reconnaisse le chemin tainted -> sanitize -> sink.
+  const safeUserPayload = buildSafeUserPayload(user)
+  localStorage.setItem(USER_KEY, JSON.stringify(safeUserPayload))
 }
 
 const clearSession = () => {
