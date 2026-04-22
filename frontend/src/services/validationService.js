@@ -97,9 +97,7 @@ export const validateRegisterInput = ({ prenom, nom, contact, email, password, r
   const safeNom = normalizeText(nom)
   const safeContact = normalizeText(contact)
 
-  if (!safePrenom) {
-    errors.push('Prénom obligatoire.')
-  } else {
+  if (safePrenom) {
     if (safePrenom.length < 2 || safePrenom.length > 80) {
       errors.push('Le prénom doit contenir entre 2 et 80 caractères.')
     }
@@ -107,11 +105,11 @@ export const validateRegisterInput = ({ prenom, nom, contact, email, password, r
     if (!NAME_REGEX.test(safePrenom)) {
       errors.push('Le prénom contient des caractères non autorisés.')
     }
+  } else {
+    errors.push('Prénom obligatoire.')
   }
 
-  if (!safeNom) {
-    errors.push('Nom obligatoire.')
-  } else {
+  if (safeNom) {
     if (safeNom.length < 2 || safeNom.length > 80) {
       errors.push('Le nom doit contenir entre 2 et 80 caractères.')
     }
@@ -119,6 +117,8 @@ export const validateRegisterInput = ({ prenom, nom, contact, email, password, r
     if (!NAME_REGEX.test(safeNom)) {
       errors.push('Le nom contient des caractères non autorisés.')
     }
+  } else {
+    errors.push('Nom obligatoire.')
   }
 
   if (!safeContact) {
@@ -142,9 +142,7 @@ export const validateFormationInput = ({ titre, description }) => {
   const safeTitle = normalizeText(titre)
   const safeDescription = normalizeText(description)
 
-  if (!safeTitle) {
-    errors.push('Titre obligatoire.')
-  } else {
+  if (safeTitle) {
     if (safeTitle.length < 3 || safeTitle.length > 120) {
       errors.push('Le titre doit contenir entre 3 et 120 caractères.')
     }
@@ -152,11 +150,11 @@ export const validateFormationInput = ({ titre, description }) => {
     if (!TEXT_REGEX.test(safeTitle) || hasUnsafeCharacters(safeTitle)) {
       errors.push('Le titre contient des caractères non autorisés.')
     }
+  } else {
+    errors.push('Titre obligatoire.')
   }
 
-  if (!safeDescription) {
-    errors.push('Description obligatoire.')
-  } else {
+  if (safeDescription) {
     if (safeDescription.length < 20 || safeDescription.length > 2000) {
       errors.push('La description doit contenir entre 20 et 2000 caractères.')
     }
@@ -164,6 +162,8 @@ export const validateFormationInput = ({ titre, description }) => {
     if (hasUnsafeCharacters(safeDescription)) {
       errors.push('La description contient des caractères non autorisés.')
     }
+  } else {
+    errors.push('Description obligatoire.')
   }
 
   return errors
@@ -178,9 +178,7 @@ export const validateModuleInput = ({ titre, contenu, ordre }) => {
     errors.push('Position du module invalide.')
   }
 
-  if (!safeTitle) {
-    errors.push('Titre du module obligatoire.')
-  } else {
+  if (safeTitle) {
     if (safeTitle.length < 3 || safeTitle.length > 120) {
       errors.push('Le titre du module doit contenir entre 3 et 120 caractères.')
     }
@@ -188,11 +186,11 @@ export const validateModuleInput = ({ titre, contenu, ordre }) => {
     if (!TEXT_REGEX.test(safeTitle) || hasUnsafeCharacters(safeTitle)) {
       errors.push('Le titre du module contient des caractères non autorisés.')
     }
+  } else {
+    errors.push('Titre du module obligatoire.')
   }
 
-  if (!safeContent) {
-    errors.push('Contenu du module obligatoire.')
-  } else {
+  if (safeContent) {
     if (safeContent.length < 20 || safeContent.length > 5000) {
       errors.push('Le contenu du module doit contenir entre 20 et 5000 caractères.')
     }
@@ -200,6 +198,8 @@ export const validateModuleInput = ({ titre, contenu, ordre }) => {
     if (hasUnsafeCharacters(safeContent)) {
       errors.push('Le contenu du module contient des caractères non autorisés.')
     }
+  } else {
+    errors.push('Contenu du module obligatoire.')
   }
 
   return errors
