@@ -1,9 +1,39 @@
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const NAME_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/
 const PHONE_REGEX = /^\+?[0-9\s\-().]{8,20}$/
 const TEXT_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s'".,!?():;\-/+&]+$/
 
+const MAX_EMAIL_LENGTH = 120
+
 const normalizeText = (value) => (typeof value === 'string' ? value.trim() : '')
+
+// Verifie la structure d'un email sans utiliser de regex vulnerable au ReDoS
+// (cf. SonarCloud javascript:S5852 - super-linear backtracking).
+// On fait un parsing en indexOf/lastIndexOf et quelques regex simples
+// (caractere unique, non ambigues) qui s'executent en temps lineaire.
+const isValidEmailStructure = (email) => {
+  const atIndex = email.indexOf('@')
+  if (atIndex < 1 || atIndex !== email.lastIndexOf('@')) {
+    return false
+  }
+
+  const local = email.slice(0, atIndex)
+  const domain = email.slice(atIndex + 1)
+
+  if (!local || !domain) {
+    return false
+  }
+
+  if (/\s/.test(local) || /\s/.test(domain)) {
+    return false
+  }
+
+  const lastDot = domain.lastIndexOf('.')
+  if (lastDot < 1 || lastDot === domain.length - 1) {
+    return false
+  }
+
+  return true
+}
 
 const validateEmail = (email, errors) => {
   if (!email) {
@@ -11,12 +41,13 @@ const validateEmail = (email, errors) => {
     return
   }
 
-  if (!EMAIL_REGEX.test(email)) {
-    errors.push('Format email invalide.')
+  if (email.length > MAX_EMAIL_LENGTH) {
+    errors.push('Email trop long (max 120 caractères).')
+    return
   }
 
-  if (email.length > 120) {
-    errors.push('Email trop long (max 120 caractères).')
+  if (!isValidEmailStructure(email)) {
+    errors.push('Format email invalide.')
   }
 }
 
