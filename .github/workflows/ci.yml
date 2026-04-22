@@ -28,7 +28,7 @@ jobs:
           php-version: "8.3"
           extensions: pdo, pdo_mysql, zip, bcmath, gd, mongodb-2.2.0
 
-      # 3. Install dépendances backend
+      # 3. Install dépendances backend (avec dev pour pouvoir lancer PHPUnit)
       - name: Install backend dependencies
         working-directory: ./backend
         run: |
@@ -37,17 +37,17 @@ jobs:
           mkdir -p storage/framework/cache
           mkdir -p storage/framework/sessions
           mkdir -p storage/framework/views
-          composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-req=ext-mongodb
+          composer install --optimize-autoloader --no-interaction --ignore-platform-req=ext-mongodb
 
       # 4. Lint backend (PHP CodeSniffer)
       - name: Lint backend
         working-directory: ./backend
         run: ./vendor/bin/phpcs --standard=PSR12 app/ || true
 
-      # 5. Tests backend
-      - name: Run backend tests
+      # 5. Tests backend + génération du rapport de coverage (Clover pour Sonar)
+      - name: Run backend tests with coverage
         working-directory: ./backend
-        run: php artisan test --env=testing || true
+        run: php artisan test --env=testing --coverage-clover=coverage.xml
 
       # 6. Setup Node.js
       - name: Setup Node.js
