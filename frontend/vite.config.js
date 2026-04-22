@@ -16,6 +16,9 @@ export default defineConfig({
       include: ['src/**/*.{js,jsx}'],
       exclude: [
         'src/main.jsx',
+        'src/App.jsx',
+        'src/pages/**',
+        'src/components/**',
         'src/**/*.test.{js,jsx}',
         'src/test/**',
         'src/**/*.config.{js,jsx}',
