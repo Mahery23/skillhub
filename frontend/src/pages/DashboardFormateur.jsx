@@ -594,7 +594,7 @@ function DashboardFormateur({ user }) {
                     Modules existants ({modules.length})
                   </h6>
                   <div className="d-flex flex-column gap-2">
-                    {modules
+                    {[...modules]
                       .sort((a, b) => a.ordre - b.ordre)
                       .map((module) => (
                         <div
@@ -657,17 +657,16 @@ function DashboardFormateur({ user }) {
                     <Form.Select
                       id="module-ordre"
                       value={moduleEnCours?.ordre || ''}
-                      onChange={(e) => setModuleEnCours({ ...moduleEnCours, ordre: parseInt(e.target.value) })}
+                      onChange={(e) => setModuleEnCours({ ...moduleEnCours, ordre: Number.parseInt(e.target.value, 10) })}
                     >
                       <option value="">Sélectionner une position</option>
-                      {Array.from({ length: (modules?.length ?? 0) + 1 }, (_, i) => i + 1).map((ordre) => {
-                        const isOrdreUsed = modules?.some(m => m.ordre === ordre && m.id !== moduleEnCours?.id)
-                        return !isOrdreUsed ? (
+                      {Array.from({ length: (modules?.length ?? 0) + 1 }, (_, i) => i + 1)
+                        .filter((ordre) => !modules?.some(m => m.ordre === ordre && m.id !== moduleEnCours?.id))
+                        .map((ordre) => (
                           <option key={ordre} value={ordre}>
                             Position {ordre}
                           </option>
-                        ) : null
-                      })}
+                        ))}
                     </Form.Select>
                   </Form.Group>
 
