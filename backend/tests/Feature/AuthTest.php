@@ -24,6 +24,17 @@ class AuthTest extends TestCase
     // CHAQUE test. Garantit l'isolation et evite les effets de bord.
     use RefreshDatabase;
 
+    // Endpoints de l'API d'authentification (extraits en constantes pour
+    // eviter la duplication de chaines - regle SonarQube
+    // "Define a constant instead of duplicating this literal N times").
+    private const REGISTER_ENDPOINT = '/api/register';
+    private const LOGIN_ENDPOINT    = '/api/login';
+    private const PROFILE_ENDPOINT  = '/api/profile';
+
+    // Valeurs de test reutilisees dans plusieurs cas.
+    private const TEST_EMAIL    = 'jean.dupont@example.com';
+    private const TEST_PASSWORD = 'Password123!';
+
     // ─────────────────────────────────────────────────────────────
     // REGISTER
     // ─────────────────────────────────────────────────────────────
@@ -33,12 +44,12 @@ class AuthTest extends TestCase
      */
     public function test_register_creates_a_user_and_returns_a_jwt(): void
     {
-        $response = $this->postJson('/api/register', [
+        $response = $this->postJson(self::REGISTER_ENDPOINT, [
             'prenom' => 'Jean',
             'nom' => 'Dupont',
             'contact' => '+33612345678',
-            'email' => 'jean.dupont@example.com',
-            'password' => 'Password123!',
+            'email' => self::TEST_EMAIL,
+            'password' => self::TEST_PASSWORD,
             'role' => 'apprenant',
         ]);
 
@@ -48,12 +59,12 @@ class AuthTest extends TestCase
                 'token',
                 'user' => ['id', 'name', 'prenom', 'nom', 'contact', 'email', 'role'],
             ])
-            ->assertJsonPath('user.email', 'jean.dupont@example.com')
+            ->assertJsonPath('user.email', self::TEST_EMAIL)
             ->assertJsonPath('user.role', 'apprenant');
 
         // On verifie aussi la persistance en base : le user doit vraiment exister.
         $this->assertDatabaseHas('users', [
-            'email' => 'jean.dupont@example.com',
+            'email' => self::TEST_EMAIL,
             'role' => 'apprenant',
         ]);
     }
@@ -64,12 +75,12 @@ class AuthTest extends TestCase
      */
     public function test_register_can_create_a_formateur(): void
     {
-        $response = $this->postJson('/api/register', [
+        $response = $this->postJson(self::REGISTER_ENDPOINT, [
             'prenom' => 'Alice',
             'nom' => 'Martin',
             'contact' => '0612345678',
             'email' => 'alice@example.com',
-            'password' => 'Password123!',
+            'password' => self::TEST_PASSWORD,
             'role' => 'formateur',
         ]);
 
@@ -84,7 +95,7 @@ class AuthTest extends TestCase
      */
     public function test_register_rejects_invalid_payload(): void
     {
-        $response = $this->postJson('/api/register', [
+        $response = $this->postJson(self::REGISTER_ENDPOINT, [
             'prenom' => '',
             'nom' => '',
             'contact' => 'abc',
@@ -106,12 +117,12 @@ class AuthTest extends TestCase
         // On seed un user existant via factory.
         User::factory()->create(['email' => 'dup@example.com']);
 
-        $response = $this->postJson('/api/register', [
+        $response = $this->postJson(self::REGISTER_ENDPOINT, [
             'prenom' => 'Bob',
             'nom' => 'Durand',
             'contact' => '0712345678',
             'email' => 'dup@example.com',
-            'password' => 'Password123!',
+            'password' => self::TEST_PASSWORD,
             'role' => 'apprenant',
         ]);
 
@@ -131,13 +142,13 @@ class AuthTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'login@example.com',
-            'mot_de_passe' => 'Password123!',
+            'mot_de_passe' => self::TEST_PASSWORD,
             'role' => 'apprenant',
         ]);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson(self::LOGIN_ENDPOINT, [
             'email' => $user->email,
-            'password' => 'Password123!',
+            'password' => self::TEST_PASSWORD,
         ]);
 
         $response->assertStatus(200)
@@ -154,10 +165,10 @@ class AuthTest extends TestCase
     {
         User::factory()->create([
             'email' => 'wrong@example.com',
-            'mot_de_passe' => 'Password123!',
+            'mot_de_passe' => self::TEST_PASSWORD,
         ]);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson(self::LOGIN_ENDPOINT, [
             'email' => 'wrong@example.com',
             'password' => 'WrongPassword',
         ]);
@@ -171,9 +182,9 @@ class AuthTest extends TestCase
      */
     public function test_login_rejects_unknown_email(): void
     {
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson(self::LOGIN_ENDPOINT, [
             'email' => 'ghost@example.com',
-            'password' => 'Password123!',
+            'password' => self::TEST_PASSWORD,
         ]);
 
         $response->assertStatus(401);
@@ -184,7 +195,7 @@ class AuthTest extends TestCase
      */
     public function test_login_validates_payload(): void
     {
-        $response = $this->postJson('/api/login', []);
+        $response = $this->postJson(self::LOGIN_ENDPOINT, []);
 
         $response->assertStatus(422)->assertJsonValidationErrors(['email', 'password']);
     }
@@ -204,7 +215,7 @@ class AuthTest extends TestCase
         $token = auth('api')->login($user);
 
         $response = $this->withHeader('Authorization', "Bearer {$token}")
-            ->getJson('/api/profile');
+            ->getJson(self::PROFILE_ENDPOINT);
 
         $response->assertStatus(200)
             ->assertJsonPath('user.id', $user->id)
@@ -217,7 +228,7 @@ class AuthTest extends TestCase
      */
     public function test_profile_requires_authentication(): void
     {
-        $response = $this->getJson('/api/profile');
+        $response = $this->getJson(self::PROFILE_ENDPOINT);
 
         $response->assertStatus(401)->assertJsonPath('message', 'Unauthenticated.');
     }
@@ -229,7 +240,7 @@ class AuthTest extends TestCase
     public function test_profile_rejects_invalid_token(): void
     {
         $response = $this->withHeader('Authorization', 'Bearer not-a-valid-jwt')
-            ->getJson('/api/profile');
+            ->getJson(self::PROFILE_ENDPOINT);
 
         $response->assertStatus(401);
     }
