@@ -64,6 +64,12 @@ frontend/yarn-error.log*
 frontend/yarn-debug.log*
 frontend/.pnpm-debug.log*
 
+# ══════════════════════════════════════
+#  RACINE DU PROJET
+# ══════════════════════════════════════
+
+.env
+docker-volumes/
 
 # ══════════════════════════════════════
 #  OS & ÉDITEURS
