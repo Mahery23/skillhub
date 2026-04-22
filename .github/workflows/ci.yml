@@ -31,7 +31,13 @@ jobs:
       # 3. Install dépendances backend
       - name: Install backend dependencies
         working-directory: ./backend
-        run: composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-req=ext-mongodb
+        run: |
+          mkdir -p bootstrap/cache
+          mkdir -p storage/logs
+          mkdir -p storage/framework/cache
+          mkdir -p storage/framework/sessions
+          mkdir -p storage/framework/views
+          composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-req=ext-mongodb
 
       # 4. Lint backend (PHP CodeSniffer)
       - name: Lint backend
