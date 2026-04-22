@@ -67,14 +67,19 @@ jobs:
         working-directory: ./frontend
         run: npm run lint || true
 
-      # 9. Analyse SonarCloud
+      # 9. Tests frontend + génération du rapport de coverage (LCOV pour Sonar)
+      - name: Run frontend tests with coverage
+        working-directory: ./frontend
+        run: npm run test:coverage
+
+      # 10. Analyse SonarCloud
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # 10. Build images Docker taguées avec le SHA du commit
+      # 11. Build images Docker taguées avec le SHA du commit
       - name: Build Docker images
         run: |
           docker build -t skillhub-api:${{ github.sha }} ./backend
