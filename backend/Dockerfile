@@ -58,14 +58,6 @@ RUN mkdir -p \
         bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# --- Cache Laravel (optimisation production) ---
-# config:cache  → fusionne tous les fichiers de config en un seul
-# route:cache   → pré-compile toutes les routes
-# view:cache    → pré-compile les templates Blade
-RUN php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache
-
 
 # ═══════════════════════════════════════════
 # Stage 2 — runtime
